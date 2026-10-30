@@ -1,17 +1,61 @@
 # Environment variables
 
-Never commit real secrets. Example files contain safe local defaults.
+Environment variables are settings stored in your computer or hosting-provider dashboard. They keep secrets out of source code. Never commit real secrets to GitHub.
 
 ## Frontend
-- `VITE_API_BASE_URL` is a public browser setting, not a secret. Local value: `http://localhost:8000/api/v1`. In Vercel, set it to the deployed Render URL ending in `/api/v1`, then redeploy.
+
+- `VITE_API_BASE_URL`: public API address used by the browser.
+- Local value: `http://localhost:8000/api/v1`.
+- Vercel value: `https://YOUR-REAL-RENDER-HOST/api/v1`.
+
+In Vercel, open the project → Settings → Environment Variables, add/update the value for the correct environment, then redeploy. This value is not a secret. Never put database credentials, JWT secrets or admin password hashes in a `VITE_*` variable.
 
 ## Backend
-- `APP_ENV`: use `production` on Render; database tables are not auto-created in production.
-- `DATABASE_URL`: local SQLite URL or production Supabase PostgreSQL connection string.
-- `CORS_ORIGINS`: comma-separated exact frontend origins.
-- `ADMIN_EMAIL`: the one administrator login email.
-- `ADMIN_PASSWORD_HASH`: Argon2 password hash; never store a plain-text password here.
-- `JWT_SECRET`: random secret of at least 32 UTF-8 bytes. Keep it private and rotate it if exposed.
-- `JWT_ACCESS_TOKEN_MINUTES`: short access-token lifetime; default 30 minutes.
 
-Configure production backend values in Render environment settings. Do not expose database credentials or secrets in any `VITE_*` variable. Admin login stays disabled with HTTP 503 until credentials and a sufficiently long JWT secret are configured.
+Set these in `backend/.env` for local development or Render's Environment settings for production.
+
+- `APP_ENV`: `development` locally; `production` on Render.
+- `DATABASE_URL`: local `sqlite:///./oasis_dev.db`; production Supabase PostgreSQL URL using `postgresql+psycopg://`.
+- `CORS_ORIGINS`: comma-separated exact frontend origins, e.g. `https://your-site.vercel.app`.
+- `ADMIN_EMAIL`: administrator sign-in email.
+- `ADMIN_PASSWORD_HASH`: Argon2 password hash; never use the plain-text password here.
+- `JWT_SECRET`: random private secret of at least 32 UTF-8 bytes.
+- `JWT_ACCESS_TOKEN_MINUTES`: access-token lifetime in minutes; default `30`.
+
+## Generate admin credentials
+
+From the backend folder with the virtual environment activated, generate a password hash locally:
+
+```powershell
+python -c "from pwdlib import PasswordHash; print(PasswordHash.recommended().hash('ReplaceThisWithYourOwnStrongPassword123!'))"
+```
+
+Paste the printed hash into Render's `ADMIN_PASSWORD_HASH`. Use the original password (not the hash) when signing in. Do not use the sample password as your real password.
+
+Generate the JWT secret:
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Paste the result into Render's `JWT_SECRET`. Keep it private.
+
+## Database table setup
+
+You do not need to run SQL manually. When the backend starts, it creates any missing tables in the configured database. This includes the enquiry table and editable website settings. The startup process runs in local development and production.
+
+This automatic setup only creates missing tables. It does not migrate columns in existing tables. A future change to an existing table must include a reviewed, versioned database migration.
+
+## Safe example
+
+These are placeholders, not working values:
+
+```dotenv
+APP_ENV=production
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/postgres
+CORS_ORIGINS=https://your-site.vercel.app
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD_HASH=PASTE_GENERATED_HASH
+JWT_SECRET=PASTE_GENERATED_RANDOM_SECRET
+JWT_ACCESS_TOKEN_MINUTES=30
+```
