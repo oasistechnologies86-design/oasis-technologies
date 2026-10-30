@@ -10,8 +10,8 @@ from sqlalchemy.orm import Session
 
 from .config import get_settings
 from .database import Base, engine, get_db
-from .models import ContactEnquiry
-from .schemas import AdminLogin, AdminToken, ContactCreate, ContactCreated, EnquiryStatusUpdate
+from .models import ContactEnquiry, SiteSettings
+from .schemas import AdminLogin, AdminToken, ContactCreate, ContactCreated, EnquiryStatusUpdate, SiteSettingsUpdate
 from .security import create_access_token, password_hash, require_admin
 
 logging.basicConfig(level=logging.INFO)
@@ -153,3 +153,51 @@ def update_enquiry_status(
         logger.exception("Unable to update enquiry status")
         raise HTTPException(status_code=503, detail="Unable to update enquiry. Please try again.")
     return {"id": item.id, "status": item.status}
+
+
+def _site_settings_payload(row: SiteSettings):
+    return {
+        "company_name": row.company_name,
+        "contact_email": row.contact_email,
+        "phone_primary": row.phone_primary,
+        "phone_secondary": row.phone_secondary,
+        "tagline": row.tagline,
+        "hero_title": row.hero_title,
+        "hero_accent": row.hero_accent,
+        "hero_description": row.hero_description,
+    }
+
+
+def _get_or_create_site_settings(db: Session) -> SiteSettings:
+    row = db.get(SiteSettings, 1)
+    if row is None:
+        row = SiteSettings(id=1)
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+    return row
+
+
+@app.get("/api/v1/site-settings")
+def public_site_settings(db: Session = Depends(get_db)):
+    return _site_settings_payload(_get_or_create_site_settings(db))
+
+
+@app.get("/api/v1/admin/site-settings")
+def admin_site_settings(_: str = Depends(require_admin), db: Session = Depends(get_db)):
+    return _site_settings_payload(_get_or_create_site_settings(db))
+
+
+@app.put("/api/v1/admin/site-settings")
+def update_site_settings(payload: SiteSettingsUpdate, _: str = Depends(require_admin), db: Session = Depends(get_db)):
+    row = _get_or_create_site_settings(db)
+    for field, value in payload.model_dump().items():
+        setattr(row, field, str(value))
+    try:
+        db.commit()
+        db.refresh(row)
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("Unable to update website settings")
+        raise HTTPException(status_code=503, detail="Unable to save website settings. Please try again.")
+    return _site_settings_payload(row)
