@@ -5,14 +5,14 @@ from datetime import timezone
 from fastapi import Depends, FastAPI, HTTPException
 from pwdlib.exceptions import UnknownHashError
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .config import get_settings
 from .database import Base, engine, get_db
-from .models import ContactEnquiry, SiteSettings
-from .schemas import AdminLogin, AdminToken, ContactCreate, ContactCreated, EnquiryStatusUpdate, SiteSettingsUpdate
+from .models import ContactEnquiry, Service, SiteSettings
+from .schemas import AdminLogin, AdminToken, ContactCreate, ContactCreated, EnquiryStatusUpdate, ServiceCreate, ServiceUpdate, SiteSettingsUpdate
 from .security import create_access_token, password_hash, require_admin
 
 logging.basicConfig(level=logging.INFO)
@@ -35,6 +35,19 @@ async def lifespan(app: FastAPI):
     # rename, alter, or delete existing tables/columns. Use a versioned migration
     # for future changes to an existing table's structure.
     Base.metadata.create_all(bind=engine)
+    # Safe additive migration for existing databases: preserve all prior enquiries.
+    inspector = inspect(engine)
+    if inspector.has_table("contact_enquiries") and "phone" not in {column["name"] for column in inspector.get_columns("contact_enquiries")}:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE contact_enquiries ADD COLUMN phone VARCHAR(40)"))
+    with engine.begin() as connection:
+        existing_services = connection.execute(text("SELECT COUNT(*) FROM services")).scalar_one()
+        if existing_services == 0:
+            for index, service in enumerate(SERVICES):
+                connection.execute(
+                    text("INSERT INTO services (slug, title, description, active, sort_order) VALUES (:slug, :title, :description, :active, :sort_order)"),
+                    {**service, "active": True, "sort_order": index},
+                )
     yield
 
 
@@ -43,7 +56,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -68,17 +81,82 @@ def readiness(db: Session = Depends(get_db)):
     return {"status": "ready"}
 
 
+def _service_payload(row: Service):
+    return {"id": row.id, "slug": row.slug, "title": row.title, "description": row.description, "active": row.active, "sort_order": row.sort_order}
+
+
 @app.get("/api/v1/services")
-def list_services():
-    return {"items": SERVICES}
+def list_services(db: Session = Depends(get_db)):
+    rows = db.query(Service).filter(Service.active.is_(True)).order_by(Service.sort_order, Service.id).all()
+    return {"items": [_service_payload(row) for row in rows]}
 
 
 @app.get("/api/v1/services/{slug}")
-def get_service(slug: str):
-    for service in SERVICES:
-        if service["slug"] == slug:
-            return service
-    raise HTTPException(status_code=404, detail="Service not found")
+def get_service(slug: str, db: Session = Depends(get_db)):
+    row = db.query(Service).filter(Service.slug == slug, Service.active.is_(True)).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Service not found")
+    return _service_payload(row)
+
+
+@app.get("/api/v1/admin/services")
+def admin_list_services(_: str = Depends(require_admin), db: Session = Depends(get_db)):
+    rows = db.query(Service).order_by(Service.sort_order, Service.id).all()
+    return {"items": [_service_payload(row) for row in rows]}
+
+
+@app.post("/api/v1/admin/services", status_code=201)
+def admin_create_service(payload: ServiceCreate, _: str = Depends(require_admin), db: Session = Depends(get_db)):
+    import re
+    import time
+    slug = re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", payload.title.casefold())).strip("-")[:140] or "service"
+    if db.query(Service).filter(Service.slug == slug).first():
+        slug = f"{slug}-{int(time.time())}"
+    item = Service(slug=slug, title=payload.title.strip(), description=payload.description.strip(), active=payload.active, sort_order=payload.sort_order)
+    db.add(item)
+    try:
+        db.commit()
+        db.refresh(item)
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("Unable to create service")
+        raise HTTPException(status_code=503, detail="Unable to create service. Please try again.")
+    return _service_payload(item)
+
+
+@app.put("/api/v1/admin/services/{service_id}")
+def admin_update_service(service_id: int, payload: ServiceUpdate, _: str = Depends(require_admin), db: Session = Depends(get_db)):
+    item = db.get(Service, service_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Service not found.")
+    item.title = payload.title.strip()
+    item.description = payload.description.strip()
+    item.active = payload.active
+    item.sort_order = payload.sort_order
+    try:
+        db.commit()
+        db.refresh(item)
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("Unable to update service")
+        raise HTTPException(status_code=503, detail="Unable to update service. Please try again.")
+    return _service_payload(item)
+
+
+@app.delete("/api/v1/admin/services/{service_id}")
+def admin_delete_service(service_id: int, _: str = Depends(require_admin), db: Session = Depends(get_db)):
+    item = db.get(Service, service_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Service not found.")
+    # Soft-delete so historic enquiries retain their service label and records.
+    item.active = False
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("Unable to archive service")
+        raise HTTPException(status_code=503, detail="Unable to archive service. Please try again.")
+    return {"id": item.id, "active": False}
 
 
 @app.post("/api/v1/contact", response_model=ContactCreated, status_code=201)
@@ -86,6 +164,7 @@ def create_contact(payload: ContactCreate, db: Session = Depends(get_db)):
     item = ContactEnquiry(
         name=payload.name,
         email=str(payload.email),
+        phone=payload.phone.strip(),
         company=payload.company.strip() if payload.company else None,
         service=payload.service,
         message=payload.message,
@@ -128,6 +207,7 @@ def admin_enquiries(_: str = Depends(require_admin), db: Session = Depends(get_d
                 "id": row.id,
                 "name": row.name,
                 "email": row.email,
+                "phone": row.phone,
                 "company": row.company,
                 "service": row.service,
                 "message": row.message,
