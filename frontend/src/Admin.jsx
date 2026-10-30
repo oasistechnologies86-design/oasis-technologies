@@ -32,6 +32,8 @@ export default function Admin({ initialPage = 'login' }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [siteSettings, setSiteSettings] = useState({company_name:'Oasis Technologies',contact_email:'oasistechnologies86@gmail.com',phone_primary:'0246470941',phone_secondary:'0201491597',tagline:'Thoughtful technology. Real-world impact.',hero_title:'Build what is next.',hero_accent:'Make it matter.',hero_description:'We build useful digital products and deliver dependable IT services that help ambitious businesses move forward.'});
+  const [settingsBusy, setSettingsBusy] = useState(false);
 
   const logout = useCallback(() => {
     sessionStorage.removeItem(TOKEN_KEY);
@@ -48,6 +50,8 @@ export default function Admin({ initialPage = 'login' }) {
     try {
       const result = await adminRequest('/admin/enquiries', currentToken);
       setItems(result.items || []);
+      const savedSettings = await adminRequest('/admin/site-settings', currentToken);
+      setSiteSettings(current => ({...current, ...savedSettings}));
     } catch (err) {
       if (/session is invalid|expired|sign in/i.test(err.message)) {
         logout();
@@ -79,6 +83,28 @@ export default function Admin({ initialPage = 'login' }) {
     } finally {
       setBusy(false);
     }
+  }
+
+
+  async function saveSiteSettings(event) {
+    event.preventDefault();
+    if (!token) return;
+    setSettingsBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const saved = await adminRequest('/admin/site-settings', token, { method: 'PUT', body: JSON.stringify(siteSettings) });
+      setSiteSettings(current => ({...current, ...saved}));
+      setNotice('Website settings saved. Public pages now use the updated details.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSettingsBusy(false);
+    }
+  }
+
+  function changeSiteSetting(event) {
+    setSiteSettings(current => ({...current, [event.target.name]: event.target.value}));
   }
 
   async function updateStatus(id, status) {
@@ -113,6 +139,28 @@ export default function Admin({ initialPage = 'login' }) {
 
   return <AdminFrame onLogout={logout}><div className="admin-heading"><div><div className="eyebrow dark">TEAM WORKSPACE</div><h1>Customer <span>enquiries.</span></h1><p>Review messages submitted through the website and keep their status up to date.</p></div><button className="button quiet" onClick={() => loadItems(token)} disabled={busy}>↻ Refresh</button></div>
     {error && <p className="error" role="alert">{error}</p>}{notice && <p className="success" role="status">{notice}</p>}
+    <section className="admin-card site-settings-card">
+      <div className="eyebrow dark">WEBSITE CONTENT</div>
+      <h2>Update public details.</h2>
+      <p>Changes saved here are shared by the contact page, homepage and footer. Phone numbers are clickable for visitors.</p>
+      <form className="form admin-form settings-form" onSubmit={saveSiteSettings}>
+        <div className="form-row">
+          <label>Company name<input name="company_name" required maxLength="120" value={siteSettings.company_name} onChange={changeSiteSetting}/></label>
+          <label>Public contact email<input type="email" name="contact_email" required maxLength="254" value={siteSettings.contact_email} onChange={changeSiteSetting}/></label>
+        </div>
+        <div className="form-row">
+          <label>Primary phone<input type="tel" name="phone_primary" required maxLength="40" value={siteSettings.phone_primary} onChange={changeSiteSetting}/></label>
+          <label>Second phone<input type="tel" name="phone_secondary" required maxLength="40" value={siteSettings.phone_secondary} onChange={changeSiteSetting}/></label>
+        </div>
+        <label>Tagline (footer)<input name="tagline" required maxLength="240" value={siteSettings.tagline} onChange={changeSiteSetting}/></label>
+        <div className="form-row">
+          <label>Homepage heading<input name="hero_title" required maxLength="120" value={siteSettings.hero_title} onChange={changeSiteSetting}/></label>
+          <label>Homepage highlighted heading<input name="hero_accent" required maxLength="120" value={siteSettings.hero_accent} onChange={changeSiteSetting}/></label>
+        </div>
+        <label>Homepage introduction<textarea name="hero_description" required minLength="10" maxLength="1000" rows="3" value={siteSettings.hero_description} onChange={changeSiteSetting}/></label>
+        <button className="button primary" disabled={settingsBusy}>{settingsBusy ? 'Saving settings…' : 'Save website settings ↗'}</button>
+      </form>
+    </section>
     <div className="admin-summary"><b>{items.length}</b><span>latest enquiries · maximum 250 shown</span></div>
     {busy && items.length === 0 ? <p>Loading enquiries…</p> : items.length === 0 ? <section className="admin-card"><h2>No enquiries yet</h2><p>New contact form submissions will appear here.</p></section> : <div className="enquiry-list">{items.map(item => <article className="enquiry-card" key={item.id}>
       <div className="enquiry-head"><div><h2>{item.name}</h2><a href={`mailto:${item.email}`}>{item.email}</a>{item.company && <p>{item.company}</p>}</div><label className="status-label">Status<select value={item.status} onChange={e => updateStatus(item.id, e.target.value)}><option value="new">New</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select></label></div>
