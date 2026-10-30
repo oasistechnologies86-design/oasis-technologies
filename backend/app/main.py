@@ -29,8 +29,11 @@ SERVICES = [
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if settings.app_env.lower() in {"development", "local", "test"}:
-        Base.metadata.create_all(bind=engine)
+    # Create any missing tables on every environment, including Render production.
+    # SQLAlchemy create_all is additive: it creates absent tables but does not
+    # rename, alter, or delete existing tables/columns. Use a versioned migration
+    # for future changes to an existing table's structure.
+    Base.metadata.create_all(bind=engine)
     yield
 
 
