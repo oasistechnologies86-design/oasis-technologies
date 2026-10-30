@@ -153,11 +153,24 @@ You do **not** need to create tables by hand. When the API starts, the applicati
 ## Part 5 — Deploy the backend API on Render
 
 1. Sign in at https://dashboard.render.com/.
-2. Choose **New** and then **Blueprint** (the wording can vary slightly).
-3. Connect GitHub if asked. Select the repository `oasistechnologies86-design/oasis-technologies`.
-4. Render should detect the root `render.yaml`. Review the service details and create/deploy the service.
-5. Open the new service in Render and go to **Environment**.
-6. Add or update the following variables. Replace every example value with your real value.
+2. Click **New +** and choose **Web Service**. Do **not** choose Blueprint.
+3. If asked, connect your GitHub account and grant Render access to the repository.
+4. Select `oasistechnologies86-design/oasis-technologies` from the repository list.
+5. Configure the service using the settings below:
+
+   | Setting | Value |
+   | --- | --- |
+   | Name | `oasis-technologies-api` (or another name you prefer) |
+   | Region | Choose a region close to your users/database |
+   | Branch | `main` |
+   | Root Directory | `backend` |
+   | Runtime | `Python 3` |
+   | Build Command | `pip install -r requirements.txt` |
+   | Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+   | Health Check Path | `/api/v1/health` |
+
+6. Choose the instance plan you want, then click **Create Web Service**.
+7. While Render builds the service, open its **Environment** tab and add the variables below. Replace every example value with your real value.
 
 | Variable | Example / instructions |
 | --- | --- |
@@ -185,7 +198,7 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 
 Copy the output into Render's `JWT_SECRET`. Do not share or commit it.
 
-9. Save the environment settings and trigger a deploy if Render does not do so automatically.
+9. Save the environment settings. Render may automatically start a new deployment after you save them; if not, use **Manual Deploy → Deploy latest commit**.
 10. Once deployed, copy the service's public URL. It looks similar to `https://oasis-technologies-api.onrender.com`. Your real URL may be different.
 11. Test the API by adding `/api/v1/health` to that URL. For example: `https://YOUR-REAL-RENDER-HOST/api/v1/health`. You should see a small JSON response containing `"status":"ok"`.
 12. Test `/api/v1/health/ready` as well. It should return `"status":"ready"` if the database connection works.
