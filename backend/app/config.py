@@ -2,6 +2,9 @@ from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+PRODUCTION_FRONTEND_ORIGIN = "https://oasis-technologies-pearl.vercel.app"
+
+
 class Settings(BaseSettings):
     app_env: str = "development"
     database_url: str = "sqlite:///./oasis_dev.db"
@@ -15,7 +18,16 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins(self):
-        return [x.strip().rstrip("/") for x in self.cors_origins.split(",") if x.strip()]
+        # Keep environment-configured origins, and always allow the live frontend.
+        # This avoids a production CORS outage if CORS_ORIGINS is missing or blank.
+        origins = [
+            origin.strip().rstrip("/")
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
+        if PRODUCTION_FRONTEND_ORIGIN not in origins:
+            origins.append(PRODUCTION_FRONTEND_ORIGIN)
+        return origins
 
 
 @lru_cache
