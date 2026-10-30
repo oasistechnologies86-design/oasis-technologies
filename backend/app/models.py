@@ -14,3 +14,16 @@ class ContactEnquiry(Base):
     message: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="new")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class SiteSettings(Base):
+    __tablename__ = "site_settings"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    company_name: Mapped[str] = mapped_column(String(120), nullable=False, default="Oasis Technologies")
+    contact_email: Mapped[str] = mapped_column(String(254), nullable=False, default="oasistechnologies86@gmail.com")
+    phone_primary: Mapped[str] = mapped_column(String(40), nullable=False, default="0246470941")
+    phone_secondary: Mapped[str] = mapped_column(String(40), nullable=False, default="0201491597")
+    tagline: Mapped[str] = mapped_column(String(240), nullable=False, default="Thoughtful technology. Real-world impact.")
+    hero_title: Mapped[str] = mapped_column(String(120), nullable=False, default="Build what's next.")
+    hero_accent: Mapped[str] = mapped_column(String(120), nullable=False, default="Make it matter.")
+    hero_description: Mapped[str] = mapped_column(Text, nullable=False, default="We build useful digital products and deliver dependable IT services that help ambitious businesses move forward.")
