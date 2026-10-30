@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from datetime import timezone
 
 from fastapi import Depends, FastAPI, HTTPException
+from pwdlib.exceptions import UnknownHashError
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -110,7 +111,7 @@ def admin_login(payload: AdminLogin):
     valid_password = False
     try:
         valid_password = password_hash.verify(payload.password, settings.admin_password_hash)
-    except (ValueError, TypeError):
+    except (UnknownHashError, ValueError, TypeError):
         logger.error("Configured admin password hash is invalid.")
     if email != settings.admin_email.strip().casefold() or not valid_password:
         raise HTTPException(status_code=401, detail="Email or password is incorrect.")
