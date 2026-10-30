@@ -1,231 +1,323 @@
-# Oasis Technologies
+# Oasis Technologies — Beginner Setup & Deployment Guide
 
-Responsive website and API for Oasis Technologies, a software development and IT services company.
+This guide is written for someone setting up the project for the first time. Follow the steps in order. You do **not** need to write SQL or open the Supabase SQL Editor.
 
-**Stack:** React JSX + Vite frontend, Python + FastAPI backend, SQLite locally, Supabase PostgreSQL in production, GitHub Actions, Vercel and Render.
+**Repository:** https://github.com/oasistechnologies86-design/oasis-technologies
 
-## Features
+## What this project uses
 
-- Responsive Home, Services, About, Approach and Contact pages.
-- Sticky navigation, light/dark theme toggle, and a dismissible step-by-step visitor tour.
-- Click-to-call phone numbers, email links and WhatsApp contact action.
-- Admin-editable public company name, contact details, tagline and homepage hero copy, shared across public pages.
-- Contact enquiries validated and saved by the API.
-- Private admin sign-in and enquiry dashboard at \`/team/login\` and \`/team/enquiries\`.
-- API health checks and service listing.
-- GitHub Actions workflow for frontend build and backend tests.
+- **Frontend:** React + Vite (the website visitors see)
+- **Backend:** Python + FastAPI (the API)
+- **Local database:** SQLite (a file on your computer)
+- **Live database:** Supabase PostgreSQL
+- **Live backend/API:** Render
+- **Live website:** Vercel
+- **Source code and automatic checks:** GitHub
 
-## 1. Install prerequisites
+When you push changes to the `main` branch, GitHub stores them and connected Render/Vercel projects can redeploy automatically.
 
-Install:
+## Before you start
+
+Create free accounts (if you do not already have them):
+
+1. GitHub: https://github.com/
+2. Supabase: https://supabase.com/
+3. Render: https://render.com/
+4. Vercel: https://vercel.com/
+
+Install these on a Windows computer:
+
 - Git: https://git-scm.com/downloads
 - Python 3.12: https://www.python.org/downloads/
-- Node.js 22 LTS (includes npm): https://nodejs.org/
+- Node.js LTS: https://nodejs.org/
 
-On Windows PowerShell, verify:
+After installation, open **PowerShell** and check the tools:
 
-\`\`\`powershell
+```powershell
 git --version
 py -3.12 --version
 node --version
 npm --version
-\`\`\`
+```
 
-## 2. Clone the repository
+If one command is not recognised, install that tool and reopen PowerShell.
 
-\`\`\`powershell
+---
+
+## Part 1 — Download the project to your computer
+
+Open PowerShell and run:
+
+```powershell
 git clone https://github.com/oasistechnologies86-design/oasis-technologies.git
 cd oasis-technologies
-\`\`\`
+```
 
-For an existing clone, update it with \`git pull origin main\`.
+You now have the project folder on your computer. The main folders are:
 
-## 3. Run the backend locally (Terminal 1)
+- `frontend` — React website
+- `backend` — Python API
+- `docs` — extra instructions
 
-From the repository root:
+If you already downloaded the project previously, open PowerShell inside its folder and run `git pull origin main` to get the latest changes.
 
-\`\`\`powershell
+## Part 2 — Start the backend on your computer
+
+The backend receives contact forms and talks to the database.
+
+In PowerShell, from the project root, run these commands **one at a time**:
+
+```powershell
 cd backend
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 Copy-Item .env.example .env
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-\`\`\`
+```
 
-If PowerShell blocks activation, allow it only for the current terminal and retry:
+If PowerShell says script execution is disabled, run this in the same PowerShell window, then activate the environment again:
 
-\`\`\`powershell
+```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\.venv\Scripts\Activate.ps1
-\`\`\`
+```
 
-The default backend configuration uses local SQLite. Development mode creates the local tables automatically. Leave this terminal open.
+For local development, the example configuration uses SQLite. You do not need a Supabase database to run the project on your computer.
 
-Check:
-- API health: http://127.0.0.1:8000/api/v1/health
-- Database readiness: http://127.0.0.1:8000/api/v1/health/ready
-- Interactive API docs: http://127.0.0.1:8000/docs
+Open the new `backend/.env` file in a text editor. For local work, keep these values:
 
-## 4. Run the frontend locally (Terminal 2)
+```dotenv
+APP_ENV=development
+DATABASE_URL=sqlite:///./oasis_dev.db
+CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
 
-Open a second terminal at the repository root:
+Save the file. Leave the other example settings alone for now. Start the backend (you should still be inside the `backend` folder, with `.venv` active):
 
-\`\`\`powershell
-cd frontend
+```powershell
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Keep this window open. Visit these links in your browser:
+
+- API status: http://127.0.0.1:8000/api/v1/health
+- Database status: http://127.0.0.1:8000/api/v1/health/ready
+- API documentation: http://127.0.0.1:8000/docs
+
+The first start creates any missing local database tables automatically.
+
+## Part 3 — Start the website on your computer
+
+Open a **second PowerShell window**. Go to the project folder (use your actual folder path if it is somewhere else), then run:
+
+```powershell
+cd oasis-technologies\frontend
 npm install
 Copy-Item .env.example .env.local
 npm run dev
-\`\`\`
+```
 
-Open the URL Vite prints, normally http://localhost:5173. The local \`frontend/.env.local\` should contain:
+If PowerShell says the folder cannot be found, use `cd` to navigate to the folder where you cloned the repository, then run `cd frontend`.
 
-\`\`\`dotenv
+Open the local website URL printed in the terminal. It is usually http://localhost:5173.
+
+Open `frontend/.env.local` and check that it contains:
+
+```dotenv
 VITE_API_BASE_URL=http://localhost:8000/api/v1
-\`\`\`
+```
 
-After editing frontend environment variables, restart the Vite server. To test locally, open the website, submit a test contact form and verify the API is responding.
+**Both terminal windows must remain open** while you use the local website. To stop a server, click its terminal and press `Ctrl+C`.
 
-## 5. Run tests and build
+## Part 4 — Create your live database (no SQL editor required)
 
-Backend tests (from a terminal with the backend virtual environment activated):
+1. Sign in at https://supabase.com/ and click **New project**.
+2. Choose an organisation, enter a project name such as `oasis-technologies`, create a strong database password, and choose a region close to your users.
+3. Wait until the project has finished creating.
+4. Open the project's **Connect** or **Database settings** area and find the PostgreSQL connection string. Use a connection option that works for external services such as Render. If using a pooler, follow the connection details Supabase provides.
+5. Copy the connection string and keep it private. It contains a password.
+6. The connection URL for this project must use SQLAlchemy's `postgresql+psycopg://` scheme. If Supabase gives you a URL starting with `postgresql://`, change only the beginning to `postgresql+psycopg://`. Do not change the username, password, host, port or database name.
 
-\`\`\`powershell
-cd backend
-pytest -q
-\`\`\`
+Example shape only — **do not copy this fake value**:
 
-Frontend production build:
+```text
+postgresql+psycopg://postgres:YOUR_DATABASE_PASSWORD@YOUR_DATABASE_HOST:5432/postgres
+```
 
-\`\`\`powershell
-cd frontend
-npm run build
-\`\`\`
+You do **not** need to create tables by hand. When the API starts, the application creates any missing tables, including contact enquiries and website settings. This is done by the backend code, not the Supabase SQL Editor.
 
-The built website is output to \`frontend/dist\`. GitHub Actions runs both the frontend build and backend tests for pushes and pull requests to \`main\`. Review results at https://github.com/oasistechnologies86-design/oasis-technologies/actions before release.
+**Important database note:** automatic table creation adds tables that are missing; it does not modify or remove columns in tables that already exist. If a future software update changes the structure of an existing table, that update must include a proper database migration. Do not delete your database to fix a deployment.
 
-## 6. Push your changes to GitHub
+## Part 5 — Deploy the backend API on Render
 
-From the project root:
+1. Sign in at https://dashboard.render.com/.
+2. Choose **New** and then **Blueprint** (the wording can vary slightly).
+3. Connect GitHub if asked. Select the repository `oasistechnologies86-design/oasis-technologies`.
+4. Render should detect the root `render.yaml`. Review the service details and create/deploy the service.
+5. Open the new service in Render and go to **Environment**.
+6. Add or update the following variables. Replace every example value with your real value.
 
-\`\`\`powershell
+| Variable | Example / instructions |
+| --- | --- |
+| `APP_ENV` | `production` |
+| `DATABASE_URL` | Your private Supabase connection URL from Part 4 |
+| `CORS_ORIGINS` | Temporarily use `https://your-site.vercel.app` after you create the Vercel project; replace with its exact real URL |
+| `ADMIN_EMAIL` | For example `oasistechnologies86@gmail.com` — the email you will use to sign in to the admin area |
+| `ADMIN_PASSWORD_HASH` | Generate it in step 7 below |
+| `JWT_SECRET` | Generate it in step 8 below |
+| `JWT_ACCESS_TOKEN_MINUTES` | `30` |
+
+7. Generate the admin password hash on your computer. Open PowerShell in the repository, activate the backend virtual environment, and make sure you are in the `backend` folder. Replace the example password with a strong unique password you can remember. The password below is only an example; **do not use it as your real password**:
+
+```powershell
+python -c "from pwdlib import PasswordHash; print(PasswordHash.recommended().hash('ChangeThisExamplePassword123!'))"
+```
+
+Copy the long hash printed by the command and paste it into Render's `ADMIN_PASSWORD_HASH` field. When signing in later, enter the original password you used in the command — not the hash. Avoid apostrophes in the password for this one-line command.
+
+8. Generate the JWT secret. In PowerShell run:
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Copy the output into Render's `JWT_SECRET`. Do not share or commit it.
+
+9. Save the environment settings and trigger a deploy if Render does not do so automatically.
+10. Once deployed, copy the service's public URL. It looks similar to `https://oasis-technologies-api.onrender.com`. Your real URL may be different.
+11. Test the API by adding `/api/v1/health` to that URL. For example: `https://YOUR-REAL-RENDER-HOST/api/v1/health`. You should see a small JSON response containing `"status":"ok"`.
+12. Test `/api/v1/health/ready` as well. It should return `"status":"ready"` if the database connection works.
+
+If you change `DATABASE_URL`, check it carefully for missing characters. Never put the database URL in a frontend variable or commit it to GitHub.
+
+## Part 6 — Deploy the website on Vercel
+
+1. Sign in at https://vercel.com/dashboard.
+2. Click **Add New → Project**.
+3. Import `oasistechnologies86-design/oasis-technologies` from GitHub.
+4. In the project's configuration, set **Root Directory** to `frontend`.
+5. Use these build settings:
+
+   - Framework preset: **Vite**
+   - Build command: `npm run build`
+   - Output directory: `dist`
+   - Install command: `npm install`
+
+6. Before deploying, open **Environment Variables** and add:
+
+   - Name: `VITE_API_BASE_URL`
+   - Value: `https://YOUR-REAL-RENDER-HOST/api/v1`
+
+   Replace `YOUR-REAL-RENDER-HOST` with the actual Render hostname copied in Part 5. Do not include a trailing slash after `api/v1`.
+
+7. Deploy. When it finishes, open the website and copy its exact URL, for example `https://oasis-technologies.vercel.app`. Use your actual Vercel URL.
+
+## Part 7 — Connect Vercel and Render
+
+The backend must know which website is allowed to call it.
+
+1. Return to Render → your API service → **Environment**.
+2. Set `CORS_ORIGINS` to the exact Vercel website origin, for example:
+
+```text
+https://oasis-technologies.vercel.app
+```
+
+Do not add a page path such as `/contact`. Use only the scheme and domain. If you later connect a custom domain, add its origin too, separated by a comma.
+
+3. Save the change and redeploy/restart the Render service.
+4. If you change `VITE_API_BASE_URL` in Vercel later, redeploy the Vercel frontend too. Vite embeds this setting into the built website.
+
+## Part 8 — Check that everything works
+
+Do these checks in order:
+
+- [ ] Open the live Vercel website on a computer.
+- [ ] Open it on a phone or use the browser's mobile view.
+- [ ] Open `https://YOUR-REAL-RENDER-HOST/api/v1/health` and confirm it says `ok`.
+- [ ] Open `https://YOUR-REAL-RENDER-HOST/api/v1/health/ready` and confirm it says `ready`.
+- [ ] Submit a test message using the Contact page.
+- [ ] Open `/team/login` on your Vercel website and sign in with the admin email and original password used to generate the hash.
+- [ ] Open `/team/enquiries` and confirm the test message appears.
+- [ ] Use the Website Content editor to change a safe test value, save it, then check the public website reflects the change.
+- [ ] Check the Render logs if any API request fails.
+
+Remove test enquiries if you do not want to keep them.
+
+## Part 9 — What happens when you update the code?
+
+When Render and Vercel are connected to this GitHub repository and automatic deployments are enabled:
+
+1. Make a change in your local project.
+2. From the project root, run:
+
+```powershell
 git status
 git add .
-git commit -m "Describe your change"
+git commit -m "Describe the change"
 git push origin main
-\`\`\`
+```
 
-Never commit \`.env\`, \`.env.local\`, database URLs, passwords, hashes or signing secrets. They should remain in local environment files or deployment-provider settings.
+3. GitHub Actions runs the automated checks.
+4. Render redeploys the backend and Vercel redeploys the frontend after the push, if automatic deployments are enabled.
+5. The backend creates any newly missing database tables when it starts. You do not have to manually create those tables.
 
-## 7. Deploy the live application
+A failed GitHub check or deployment is a signal to inspect the logs before assuming the update is live. Open the **Actions** tab in GitHub, the deployment in Render, or the deployment in Vercel to see the error.
 
-The live architecture is GitHub (source) + Supabase (database) + Render (API) + Vercel (website). Create accounts if needed at https://supabase.com/, https://render.com/ and https://vercel.com/.
+## Admin workspace
 
-### A. Create the production database on Supabase
+- Admin login: `https://YOUR-VERCEL-HOST/team/login`
+- Enquiries: `https://YOUR-VERCEL-HOST/team/enquiries`
+- The admin login will not work until `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, and `JWT_SECRET` are configured on Render.
+- The browser keeps the access token in session storage for the current tab. Sign out when finished.
 
-1. Create a Supabase project and store the database password securely.
-2. Open the database connection settings and copy a PostgreSQL connection string suitable for your Render service. Follow Supabase's recommendation for direct or pooler connections for your network.
-3. Keep this URL private. Never put it in frontend code, GitHub files, or a \`VITE_*\` variable.
-4. This backend installs the \`psycopg\` driver. For SQLAlchemy, use a connection URL whose scheme is \`postgresql+psycopg://\`. If Supabase gives you \`postgresql://\`, change only that scheme to \`postgresql+psycopg://\`; preserve the remaining URL and parameters.
-5. **Important:** the app creates tables automatically only in development/test mode, not in production. Before the live contact form can save enquiries, create the production schema with a reviewed migration or controlled one-time schema setup. Alembic migrations are not included yet. A successful health check alone does not prove the enquiries table exists. This release adds the `site_settings` table too; in Supabase SQL Editor, review and run `backend/sql/20261030_site_settings.sql` once before deploying the API. It creates the settings table and seeds the public contact details supplied by the owner.
+The Website Content editor currently supports company name, public email, two phone numbers, footer tagline, and homepage heading/description. Phone and email links are available on the public site.
 
-### B. Deploy the Python API on Render
+## Environment variables — quick reference
 
-1. In https://dashboard.render.com/, select **New → Blueprint** and connect this GitHub repository. Render can use the root-level \`render.yaml\`. Alternatively, create a Python web service manually.
-2. For manual setup, configure:
-   - Root directory: \`backend\`
-   - Build command: \`pip install -r requirements.txt\`
-   - Start command: \`uvicorn app.main:app --host 0.0.0.0 --port $PORT\`
-   - Health-check path: \`/api/v1/health\`
-3. In Render's Environment settings, configure:
+**Vercel (frontend):**
 
-   | Variable | Value |
-   | --- | --- |
-   | \`APP_ENV\` | \`production\` |
-   | \`DATABASE_URL\` | Private Supabase URL using \`postgresql+psycopg://\` |
-   | \`CORS_ORIGINS\` | Exact Vercel origin, e.g. \`https://your-project.vercel.app\` |
-   | \`ADMIN_EMAIL\` | Your admin login email |
-   | \`ADMIN_PASSWORD_HASH\` | Argon2 hash of your admin password |
-   | \`JWT_SECRET\` | Random private secret, at least 32 bytes |
-   | \`JWT_ACCESS_TOKEN_MINUTES\` | \`30\` (optional default) |
+```dotenv
+VITE_API_BASE_URL=https://YOUR-REAL-RENDER-HOST/api/v1
+```
 
-4. Generate an Argon2 password hash locally. Run this from the backend virtual environment; replace the placeholder with a strong unique password. This example uses a quoted string, so avoid apostrophes in the password or use a local script that reads it securely.
+**Render (backend):**
 
-   \`\`\`powershell
-   python -c "from pwdlib import PasswordHash; print(PasswordHash.recommended().hash('REPLACE_WITH_YOUR_LONG_UNIQUE_PASSWORD'))"
-   \`\`\`
+```dotenv
+APP_ENV=production
+DATABASE_URL=postgresql+psycopg://YOUR_SUPABASE_CONNECTION_DETAILS
+CORS_ORIGINS=https://YOUR-REAL-VERCEL-HOST
+ADMIN_EMAIL=your-admin-email@example.com
+ADMIN_PASSWORD_HASH=PASTE_THE_GENERATED_HASH_HERE
+JWT_SECRET=PASTE_THE_GENERATED_RANDOM_SECRET_HERE
+JWT_ACCESS_TOKEN_MINUTES=30
+```
 
-   Paste the resulting hash into Render's \`ADMIN_PASSWORD_HASH\` setting. Do not commit it or your plain-text password.
-5. Generate a JWT signing secret locally:
+These are examples to explain the variable names, not working credentials. Set each variable in the relevant provider's dashboard. Do not paste real passwords, hashes, database URLs or JWT secrets into GitHub, public screenshots, or frontend variables.
 
-   \`\`\`powershell
-   python -c "import secrets; print(secrets.token_urlsafe(48))"
-   \`\`\`
+## Common problems
 
-   Paste the output into Render's \`JWT_SECRET\`. Keep it private.
-6. Deploy the service and copy its public HTTPS URL, for example \`https://your-api.onrender.com\`.
-7. Check \`https://YOUR-RENDER-HOST/api/v1/health\` and \`https://YOUR-RENDER-HOST/api/v1/health/ready\`. Apply the production database schema before testing contact submission.
+- **`py` or Python not found:** install Python 3.12 and reopen PowerShell.
+- **`npm` not found:** install Node.js LTS and reopen PowerShell.
+- **Frontend says it cannot connect to the API:** check Vercel's `VITE_API_BASE_URL`, confirm the Render service is running, and redeploy Vercel after changing the variable.
+- **Browser reports a CORS error:** set Render's `CORS_ORIGINS` to the exact Vercel origin, save, and redeploy Render.
+- **Health says ok but database readiness fails:** check Render's `DATABASE_URL` and Supabase connection details.
+- **Admin login shows 503:** check that all three admin variables are set on Render and that `JWT_SECRET` has at least 32 bytes.
+- **Admin login says the password is wrong:** use the original password used to generate `ADMIN_PASSWORD_HASH`; do not enter the hash as the password.
+- **A deployment failed:** open the deployment logs in the relevant service. Do not delete the database or change random settings to try to fix it.
 
-### C. Deploy the React website on Vercel
+## Important security and maintenance notes
 
-1. Open https://vercel.com/dashboard and choose **Add New → Project**. Import this GitHub repository.
-2. Set **Root Directory** to \`frontend\`. Use the Vite framework preset, build command \`npm run build\`, output directory \`dist\`, and install command \`npm install\`.
-3. In Vercel project settings, add this environment variable for Production:
+- Never commit `.env`, `.env.local`, database credentials, passwords, password hashes or signing secrets.
+- Keep the Supabase database password private.
+- Keep the GitHub repository connected to Render and Vercel; verify automatic deployments are enabled.
+- Keep backups and understand Supabase's backup/retention options before using the website for important customer enquiries.
+- Automatic startup table creation handles **missing tables**. It does not migrate changes to columns in existing tables; future changes to an existing table need a reviewed, versioned migration.
+- Email notifications, quotation workflows, support tickets and file uploads are not implemented yet.
 
-   \`\`\`dotenv
-   VITE_API_BASE_URL=https://YOUR-RENDER-HOST/api/v1
-   \`\`\`
+## More documentation
 
-   Replace the example host with your actual Render API hostname. This value is public; never place secrets here.
-4. Deploy the frontend. Copy its exact HTTPS origin (scheme + hostname, no path).
-5. Return to Render and set \`CORS_ORIGINS\` to that exact Vercel origin. If you use a custom domain, add that origin too. Only allow preview origins if you need them. Save and redeploy/restart the API.
-6. If you change \`VITE_API_BASE_URL\`, redeploy Vercel: Vite embeds these values into the frontend build.
-
-### D. Verify the live deployment
-
-1. Open your Vercel website and check it on desktop and mobile.
-2. Confirm the Render health and database-readiness endpoints work.
-3. Submit a test contact enquiry and confirm it is saved in Supabase.
-4. Visit \`https://YOUR-VERCEL-HOST/team/login\` and sign in using the email and password whose hash you configured on Render.
-5. Open \`/team/enquiries\`, confirm the test enquiry appears, and check that you can change its status.
-6. If anything fails, check browser developer tools, Render logs, Vercel deployment logs and GitHub Actions. Remove test customer data if appropriate.
-
-## 8. Admin workspace
-
-- Sign in: \`/team/login\`
-- Enquiry dashboard: \`/team/enquiries\`
-- Supports \`new\`, \`in_progress\` and \`resolved\` statuses; displays up to the latest 250 enquiries.
-- Login intentionally stays disabled until \`ADMIN_EMAIL\`, \`ADMIN_PASSWORD_HASH\` and a \`JWT_SECRET\` of at least 32 bytes are configured.
-- The browser stores the access token in session storage for the current tab. Use HTTPS in production and sign out when finished.
-
-## 9. Environment variables
-
-**Frontend** — \`frontend/.env.local\` locally; Vercel project settings in production:
-- \`VITE_API_BASE_URL\`: API base URL ending in \`/api/v1\`. Local value: \`http://localhost:8000/api/v1\`.
-
-**Backend** — \`backend/.env\` locally; Render Environment settings in production:
-- \`APP_ENV\`: \`development\` locally; \`production\` on Render.
-- \`DATABASE_URL\`: \`sqlite:///./oasis_dev.db\` locally; Supabase PostgreSQL in production.
-- \`CORS_ORIGINS\`: comma-separated allowed frontend origins.
-- \`ADMIN_EMAIL\`: administrator's sign-in email.
-- \`ADMIN_PASSWORD_HASH\`: Argon2 hash, never a plain-text password.
-- \`JWT_SECRET\`: private random secret, at least 32 bytes.
-- \`JWT_ACCESS_TOKEN_MINUTES\`: token lifetime in minutes; default 30.
-
-See also [Environment variables guide](docs/ENVIRONMENT_VARIABLES.md), [Deployment guide](docs/DEPLOYMENT.md), and [Security checklist](docs/SECURITY.md).
-
-## 10. Troubleshooting
-
-- **Python launcher not found:** install Python 3.12, enable the launcher/PATH options, then reopen PowerShell.
-- **PowerShell blocks activation:** use the process-scoped execution policy command in Section 3.
-- **Port already in use:** stop the other process or choose another port. If the API port changes, update \`VITE_API_BASE_URL\`.
-- **CORS or network error:** confirm the frontend API URL is the Render host ending in \`/api/v1\`; set Render \`CORS_ORIGINS\` to the exact Vercel origin and redeploy as needed.
-- **Admin login returns 503:** configure all three admin variables on Render and redeploy.
-- **Database connection fails:** check Supabase credentials, network/pooler settings and the \`postgresql+psycopg://\` scheme.
-- **Contact form cannot save:** ensure the production schema has been created and database readiness succeeds; a running API does not guarantee the enquiries table exists.
-- **Environment change not reflected:** check that the variable is set on the correct service/environment and redeploy. Frontend variables need the \`VITE_\` prefix.
-
-## 11. Production launch checklist
-
-This repository is a functional starter, not yet a complete business management platform. Before accepting real customer data, complete and test production schema setup/migrations, backups and retention, login rate limiting and monitoring, privacy/legal content, and a security review. Email notifications, quotation workflows, support-ticket management and file uploads are not implemented yet.
+- [Environment variables](docs/ENVIRONMENT_VARIABLES.md)
+- [Deployment reference](docs/DEPLOYMENT.md)
+- [Security checklist](docs/SECURITY.md)
