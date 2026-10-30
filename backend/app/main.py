@@ -85,8 +85,16 @@ def _service_payload(row: Service):
     return {"id": row.id, "slug": row.slug, "title": row.title, "description": row.description, "active": row.active, "sort_order": row.sort_order}
 
 
+def _ensure_services(db: Session):
+    if db.query(Service).count() == 0:
+        for index, service in enumerate(SERVICES):
+            db.add(Service(**service, active=True, sort_order=index))
+        db.commit()
+
+
 @app.get("/api/v1/services")
 def list_services(db: Session = Depends(get_db)):
+    _ensure_services(db)
     rows = db.query(Service).filter(Service.active.is_(True)).order_by(Service.sort_order, Service.id).all()
     return {"items": [_service_payload(row) for row in rows]}
 
@@ -101,6 +109,7 @@ def get_service(slug: str, db: Session = Depends(get_db)):
 
 @app.get("/api/v1/admin/services")
 def admin_list_services(_: str = Depends(require_admin), db: Session = Depends(get_db)):
+    _ensure_services(db)
     rows = db.query(Service).order_by(Service.sort_order, Service.id).all()
     return {"items": [_service_payload(row) for row in rows]}
 
