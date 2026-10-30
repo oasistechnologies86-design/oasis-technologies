@@ -1,7 +1,7 @@
 const configuredApiBase = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1').replace(/\/+$/, '');
 // Accept either the API host or a host that already includes /api/v1.
 // This prevents production environment-variable mistakes from dropping the API prefix.
-const API_BASE = /\/api\/v1$/i.test(configuredApiBase)
+export const API_BASE = /\/api\/v1$/i.test(configuredApiBase)
   ? configuredApiBase
   : `${configuredApiBase}/api/v1`;
 
