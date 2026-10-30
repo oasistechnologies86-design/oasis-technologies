@@ -123,19 +123,30 @@ export default function Admin({ initialPage = 'login' }) {
   }
 
   if (initialPage === 'login') {
-    return <AdminFrame onLogout={() => {}}><section className="admin-card admin-login-card">
-      <div className="eyebrow dark">RESTRICTED ACCESS</div><h1>Team <span>sign in.</span></h1><p>Authorized Oasis team members only.</p>
-      <form className="form admin-form" onSubmit={submitLogin}>
-        <label>Admin email<input required type="email" autoComplete="username" maxLength="254" value={email} onChange={e => setEmail(e.target.value)} /></label>
-        <label>Password<input required type="password" autoComplete="current-password" maxLength="1024" value={password} onChange={e => setPassword(e.target.value)} /></label>
-        {error && <p className="error" role="alert">{error}</p>}
-        <button className="button primary submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in securely ↗'}</button>
-      </form>
-      <Link className="admin-back" to="/">← Back to website</Link>
-    </section></AdminFrame>;
+    return <AdminFrame onLogout={() => {}}><div className="admin-login-layout">
+      <aside className="admin-login-aside">
+        <div className="admin-login-monogram">O<span>.</span></div>
+        <div className="eyebrow">OASIS TECHNOLOGIES / TEAM</div>
+        <h1>Good work<br/>starts with <span>clarity.</span></h1>
+        <p>A focused space to look after customer enquiries and keep the details of our website up to date.</p>
+        <div className="admin-login-rule"><span></span> INTERNAL WORKSPACE · AUTHORISED TEAM ONLY</div>
+      </aside>
+      <section className="admin-card admin-login-card">
+        <div className="admin-login-lock" aria-hidden="true">↗</div>
+        <div className="eyebrow dark">SECURE TEAM ACCESS</div><h2>Welcome <span>back.</span></h2><p>Sign in with your authorised administrator account.</p>
+        <form className="form admin-form" onSubmit={submitLogin}>
+          <label>Admin email<input required type="email" autoComplete="username" maxLength="254" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@yourcompany.com" /></label>
+          <label>Password<input required type="password" autoComplete="current-password" maxLength="1024" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" /></label>
+          {error && <p className="error" role="alert">{error}</p>}
+          <button className="button primary submit" disabled={busy}>{busy ? 'Signing in securely…' : 'Sign in to workspace →'}</button>
+        </form>
+        <div className="admin-login-security"><span aria-hidden="true">◈</span> Private access for authorised Oasis team members.</div>
+        <Link className="admin-back" to="/">← Return to public website</Link>
+      </section>
+    </div></AdminFrame>;
   }
 
-  return <AdminFrame onLogout={logout}><div className="admin-heading"><div><div className="eyebrow dark">TEAM WORKSPACE</div><h1>Customer <span>enquiries.</span></h1><p>Review messages submitted through the website and keep their status up to date.</p></div><button className="button quiet" onClick={() => loadItems(token)} disabled={busy}>↻ Refresh</button></div>
+  return <AdminFrame onLogout={logout}><div className="admin-heading"><div><div className="eyebrow dark">OASIS / OPERATIONS</div><h1>Your team <span>workspace.</span></h1><p>Good service starts with a thoughtful response. Review new enquiries, follow up with customers, and keep website details current.</p></div><button className="button quiet admin-refresh" onClick={() => loadItems(token)} disabled={busy}>↻ {busy ? 'Refreshing…' : 'Refresh inbox'}</button></div>
     {error && <p className="error" role="alert">{error}</p>}{notice && <p className="success" role="status">{notice}</p>}
     <section className="admin-card site-settings-card">
       <div className="eyebrow dark">WEBSITE CONTENT</div>
@@ -159,7 +170,7 @@ export default function Admin({ initialPage = 'login' }) {
         <button className="button primary" disabled={settingsBusy}>{settingsBusy ? 'Saving settings…' : 'Save website settings ↗'}</button>
       </form>
     </section>
-    <div className="admin-summary"><b>{items.length}</b><span>latest enquiries · maximum 250 shown</span></div>
+    <div className="admin-summary"><b>{items.length}</b><span>enquiries in your latest inbox view</span><small>Review each message and update its status so your team knows what needs attention.</small></div>
     {busy && items.length === 0 ? <p>Loading enquiries…</p> : items.length === 0 ? <section className="admin-card"><h2>No enquiries yet</h2><p>New contact form submissions will appear here.</p></section> : <div className="enquiry-list">{items.map(item => <article className="enquiry-card" key={item.id}>
       <div className="enquiry-head"><div><h2>{item.name}</h2><a href={`mailto:${item.email}`}>{item.email}</a>{item.company && <p>{item.company}</p>}</div><label className="status-label">Status<select value={item.status} onChange={e => updateStatus(item.id, e.target.value)}><option value="new">New</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select></label></div>
       <div className="enquiry-meta"><span>{item.service}</span><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString()}</time></div>
