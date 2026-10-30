@@ -414,3 +414,32 @@ body{background:#f5f4ed;color:#17231d}
  .admin-login-aside h1{font-size:42px}
  .admin-card.admin-login-card{padding:25px}
 }
+
+
+/* Admin confirmation, service management, and enquiry filters */
+.confirm-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:#07130dbb;backdrop-filter:blur(5px)}
+.confirm-card{width:min(100%,440px);padding:32px;background:#f8f8f2;border:1px solid #dce1d5;border-radius:4px;box-shadow:0 30px 90px #0005}
+.confirm-card h2{margin:15px 0 10px;font-size:28px;letter-spacing:-1px;color:#17231d}
+.confirm-card p{font-size:13px;line-height:1.8;color:#68756b}
+.confirm-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;margin-top:24px}
+.service-editor{padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important;margin-top:22px;gap:16px}
+.service-active-toggle{display:flex!important;align-items:center;gap:10px!important}
+.service-active-toggle input{width:17px;height:17px;min-height:0;accent-color:#64872b}
+.service-editor-actions{display:flex;flex-wrap:wrap;gap:10px}
+.managed-services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:28px}
+.managed-service{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:20px;border:1px solid #dce1d5;background:#fff;border-radius:3px;min-width:0}
+.managed-service.archived{opacity:.65}
+.managed-service h3{margin:9px 0;font-size:16px;letter-spacing:-.3px;color:#1b2a20}
+.managed-service p{font-size:12px;line-height:1.7;color:#68756b}
+.managed-service small,.managed-service-state{font-size:9px;letter-spacing:.8px;color:#657d39}
+.managed-service-actions{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.managed-service-actions .button{padding:9px 12px;font-size:11px;white-space:nowrap}
+.admin-archive{border:0;background:transparent;color:#9a4b3b;font-size:11px;padding:8px;cursor:pointer}
+.enquiry-filters{margin-top:22px!important}
+.enquiry-filter-grid{display:grid;grid-template-columns:2fr 1fr 1.2fr 1fr auto;align-items:end;gap:12px;margin-top:20px}
+.enquiry-filter-grid label{display:flex;flex-direction:column;gap:7px;font-size:11px;color:#354438}
+.enquiry-filter-grid input,.enquiry-filter-grid select{width:100%;min-width:0;min-height:44px;padding:11px;border:1px solid #d6ddd0;border-radius:2px;background:#fff;color:#17231d;font:inherit}
+.clear-filters{white-space:nowrap;min-height:44px;padding:10px 13px}
+.enquiry-phone{display:block;margin-top:7px;font-size:12px;color:#536d25}
+@media(max-width:950px){.enquiry-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.clear-filters{width:max-content}.managed-services{grid-template-columns:1fr}}
+@media(max-width:520px){.confirm-card{padding:24px}.confirm-actions{flex-direction:column-reverse}.confirm-actions .button{width:100%}.enquiry-filter-grid{grid-template-columns:1fr}.managed-service{flex-direction:column}.managed-service-actions{flex-direction:row}.service-editor .form-row{grid-template-columns:1fr}}
