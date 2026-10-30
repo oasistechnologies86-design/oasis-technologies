@@ -58,7 +58,9 @@ export default function Admin({ initialPage = 'login' }) {
     try {
       const result = await adminRequest('/admin/enquiries', currentToken);
       setItems(result.items || []);
-      const servicesResult = await adminRequest('/admin/services', currentToken);\n      setServiceItems(servicesResult.items || []);\n      const savedSettings = await adminRequest('/admin/site-settings', currentToken);
+      const servicesResult = await adminRequest('/admin/services', currentToken);
+      setServiceItems(servicesResult.items || []);
+      const savedSettings = await adminRequest('/admin/site-settings', currentToken);
       setSiteSettings(current => ({...current, ...savedSettings}));
     } catch (err) {
       if (/session is invalid|expired|sign in/i.test(err.message)) {
