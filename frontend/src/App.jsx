@@ -2,7 +2,8 @@ import {useEffect,useState} from 'react';
 import {Link,NavLink,Route,Routes,useLocation} from 'react-router-dom';
 import Admin from './Admin.jsx';
 import {apiRequest} from './api.js';
-function phoneHref(value){const digits=String(value||'').replace(/\\D/g,'');return 'tel:'+(digits.startsWith('233')?'+'+digits:digits.startsWith('0')?'+233'+digits.slice(1):'+233'+digits)}\nfunction whatsappHref(value){const digits=String(value||'').replace(/\\D/g,'');return 'https://wa.me/'+(digits.startsWith('233')?digits:digits.startsWith('0')?'233'+digits.slice(1):'233'+digits)}\nconst services=[
+function phoneHref(value){const digits=String(value||'').replace(/\D/g,'');return 'tel:'+(digits.startsWith('233')?'+'+digits:digits.startsWith('0')?'+233'+digits.slice(1):'+233'+digits)}
+function whatsappHref(value){const digits=String(value||'').replace(/\D/g,'');return 'https://wa.me/'+(digits.startsWith('233')?digits:digits.startsWith('0')?'233'+digits.slice(1):'233'+digits)}\nconst services=[
 ['Software development','Purpose-built business applications and digital products.','⌘'],
 ['Web & mobile apps','Accessible digital experiences that work across screens.','▧'],
 ['IT consulting','Practical technology strategy and guidance.','◎'],
