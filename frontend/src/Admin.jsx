@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiRequest } from './api.js';
+import { apiRequest, API_BASE } from './api.js';
 
 const TOKEN_KEY = 'oasis_admin_token';
-const API_ROOT = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1').replace(/\/$/, '');
-
 async function adminRequest(path, token, options = {}) {
-  const response = await fetch(API_ROOT + path, {
+  const response = await fetch(API_BASE + (path.startsWith('/') ? path : `/${path}`), {
     ...options,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(options.headers || {}) },
   });
