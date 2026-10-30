@@ -22,12 +22,21 @@ For the full beginner-friendly walkthrough, see the [root README](../README.md).
 
 ## Render API
 
-The repository root contains `render.yaml`. In Render, create a Blueprint from the GitHub repository or create a Python web service manually with:
+Create a **Web Service manually** in Render. Do not choose Blueprint.
 
+1. Open https://dashboard.render.com/ and click **New + → Web Service**.
+2. Connect GitHub and select `oasistechnologies86-design/oasis-technologies`.
+3. Enter these service settings:
+
+- Name: `oasis-technologies-api`
+- Branch: `main`
 - Root directory: `backend`
+- Runtime: `Python 3`
 - Build command: `pip install -r requirements.txt`
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Health-check path: `/api/v1/health`
+
+4. Click **Create Web Service**. Then open the service's **Environment** tab and add the variables below.
 
 Set the following in Render's Environment settings:
 
