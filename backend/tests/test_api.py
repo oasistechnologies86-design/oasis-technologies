@@ -62,6 +62,30 @@ def test_admin_rejects_bad_password():
     assert response.status_code == 401
 
 
+
+def test_admin_login_invalid_hash_returns_401_not_500():
+    settings = get_settings()
+    settings.admin_email = "admin@example.com"
+    settings.admin_password_hash = "not-a-valid-password-hash"
+    settings.jwt_secret = "test-secret-value-with-at-least-thirty-two-bytes"
+    response = client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "any-password"})
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Email or password is incorrect."
+
+
+def test_production_frontend_cors_preflight():
+    response = client.options(
+        "/api/v1/auth/login",
+        headers={
+            "Origin": "https://oasis-technologies-pearl.vercel.app",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://oasis-technologies-pearl.vercel.app"
+
+
 def test_public_site_settings_has_contact_details():
     response = client.get("/api/v1/site-settings")
     assert response.status_code == 200
