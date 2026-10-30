@@ -40,5 +40,11 @@ Run backend tests from backend after installing dependencies with pytest -q.
 ## Deployment
 Read docs/DEPLOYMENT.md and docs/ENVIRONMENT_VARIABLES.md. Never commit .env files or production credentials.
 
+## Admin workspace
+- Open `/team/login` on the deployed frontend to sign in as the configured administrator.
+- After login, `/team/enquiries` lists contact form submissions and allows status updates (`new`, `in_progress`, `resolved`).
+- Configure `ADMIN_EMAIL`, an Argon2 `ADMIN_PASSWORD_HASH`, and a random `JWT_SECRET` of at least 32 bytes in the backend environment. See `backend/.env.example` and `docs/SECURITY.md`.
+- Admin authentication is disabled until those values are configured. Never commit real credentials.
+
 ## Production readiness
-This is an initial working foundation, not yet a complete production business-management platform. Authentication, admin role permissions, quote and ticket workflows, email delivery, upload storage, database migrations, rate limiting, and a production security review remain before launch. The admin enquiries endpoint intentionally returns 501 rather than exposing customer data without authentication.
+This is a working foundation, not yet a complete production business-management platform. Before launch, add login rate limiting and monitoring, database migrations, backups and retention policy, privacy/legal pages, and a production security review. Quote and support-ticket workflows, email delivery, and file storage are not implemented yet. Run and review the GitHub Actions checks before deploying.
