@@ -32,7 +32,7 @@ def test_contact_validation():
 
 
 def test_contact_submission():
-    response = client.post("/api/v1/contact", json={"name": "Test Customer", "email": "customer@example.com", "company": "Example Ltd", "service": "Software development", "message": "I would like to discuss a business application."})
+    response = client.post("/api/v1/contact", json={"name": "Test Customer", "email": "customer@example.com", "phone": "+233241234567", "company": "Example Ltd", "service": "Software development", "message": "I would like to discuss a business application."})
     assert response.status_code == 201 and response.json()["id"] > 0
 
 
