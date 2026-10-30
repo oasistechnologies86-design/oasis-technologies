@@ -37,3 +37,22 @@ class AdminToken(BaseModel):
 
 class EnquiryStatusUpdate(BaseModel):
     status: Literal["new", "in_progress", "resolved"]
+
+
+class SiteSettingsUpdate(BaseModel):
+    company_name: str = Field(min_length=2, max_length=120)
+    contact_email: EmailStr
+    phone_primary: str = Field(min_length=7, max_length=40)
+    phone_secondary: str = Field(min_length=7, max_length=40)
+    tagline: str = Field(min_length=2, max_length=240)
+    hero_title: str = Field(min_length=2, max_length=120)
+    hero_accent: str = Field(min_length=2, max_length=120)
+    hero_description: str = Field(min_length=10, max_length=1000)
+
+    @field_validator("company_name", "phone_primary", "phone_secondary", "tagline", "hero_title", "hero_accent", "hero_description")
+    @classmethod
+    def strip_site_text(cls, value: str):
+        value = value.strip()
+        if not value:
+            raise ValueError("This field cannot be empty.")
+        return value
