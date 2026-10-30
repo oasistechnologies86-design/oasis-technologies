@@ -109,16 +109,17 @@ The first start creates any missing local database tables automatically.
 
 ## Part 3 — Start the website on your computer
 
-Open a **second PowerShell window**. Go to the project folder (use your actual folder path if it is somewhere else), then run:
+Open a **second PowerShell window** and navigate to the project folder you cloned. For example, if you saved it in Documents:
 
 ```powershell
-cd oasis-technologies\frontend
+cd $HOME\Documents\oasis-technologies
+cd frontend
 npm install
 Copy-Item .env.example .env.local
 npm run dev
 ```
 
-If PowerShell says the folder cannot be found, use `cd` to navigate to the folder where you cloned the repository, then run `cd frontend`.
+If you cloned it somewhere else, change the first `cd` line to your actual project folder. If the terminal is already inside the project folder, run only `cd frontend` before the remaining commands.
 
 Open the local website URL printed in the terminal. It is usually http://localhost:5173.
 
