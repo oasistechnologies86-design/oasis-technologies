@@ -60,3 +60,36 @@ def test_admin_rejects_bad_password():
     settings.jwt_secret = "test-secret-value-with-at-least-thirty-two-bytes"
     response = client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "wrong-password"})
     assert response.status_code == 401
+
+
+def test_public_site_settings_has_contact_details():
+    response = client.get("/api/v1/site-settings")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["contact_email"] == "oasistechnologies86@gmail.com"
+    assert data["phone_primary"] == "0246470941"
+    assert data["phone_secondary"] == "0201491597"
+
+
+def test_site_settings_admin_authentication_and_update():
+    settings = get_settings()
+    settings.admin_email = "admin@example.com"
+    settings.admin_password_hash = PasswordHash.recommended().hash("Test-Only-Strong-Password-123!")
+    settings.jwt_secret = "test-secret-value-with-at-least-thirty-two-bytes"
+    payload = {
+        "company_name": "Oasis Technologies",
+        "contact_email": "oasistechnologies86@gmail.com",
+        "phone_primary": "0246470941",
+        "phone_secondary": "0201491597",
+        "tagline": "Thoughtful technology. Real-world impact.",
+        "hero_title": "Build what is next.",
+        "hero_accent": "Make it matter.",
+        "hero_description": "We build digital products and deliver reliable IT services to help businesses move forward.",
+    }
+    assert client.put("/api/v1/admin/site-settings", json=payload).status_code == 401
+    login = client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "Test-Only-Strong-Password-123!"})
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+    response = client.put("/api/v1/admin/site-settings", json=payload, headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200
+    assert client.get("/api/v1/site-settings").json()["contact_email"] == payload["contact_email"]
