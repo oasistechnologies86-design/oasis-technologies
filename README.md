@@ -7,6 +7,9 @@ Responsive website and API for Oasis Technologies, a software development and IT
 ## Features
 
 - Responsive Home, Services, About, Approach and Contact pages.
+- Sticky navigation, light/dark theme toggle, and a dismissible step-by-step visitor tour.
+- Click-to-call phone numbers, email links and WhatsApp contact action.
+- Admin-editable public company name, contact details, tagline and homepage hero copy, shared across public pages.
 - Contact enquiries validated and saved by the API.
 - Private admin sign-in and enquiry dashboard at \`/team/login\` and \`/team/enquiries\`.
 - API health checks and service listing.
@@ -125,7 +128,7 @@ The live architecture is GitHub (source) + Supabase (database) + Render (API) + 
 2. Open the database connection settings and copy a PostgreSQL connection string suitable for your Render service. Follow Supabase's recommendation for direct or pooler connections for your network.
 3. Keep this URL private. Never put it in frontend code, GitHub files, or a \`VITE_*\` variable.
 4. This backend installs the \`psycopg\` driver. For SQLAlchemy, use a connection URL whose scheme is \`postgresql+psycopg://\`. If Supabase gives you \`postgresql://\`, change only that scheme to \`postgresql+psycopg://\`; preserve the remaining URL and parameters.
-5. **Important:** the app creates tables automatically only in development/test mode, not in production. Before the live contact form can save enquiries, create the production schema with a reviewed migration or controlled one-time schema setup. Alembic migrations are not included yet. A successful health check alone does not prove the enquiries table exists.
+5. **Important:** the app creates tables automatically only in development/test mode, not in production. Before the live contact form can save enquiries, create the production schema with a reviewed migration or controlled one-time schema setup. Alembic migrations are not included yet. A successful health check alone does not prove the enquiries table exists. This release adds the `site_settings` table too; in Supabase SQL Editor, review and run `backend/sql/20261030_site_settings.sql` once before deploying the API. It creates the settings table and seeds the public contact details supplied by the owner.
 
 ### B. Deploy the Python API on Render
 
