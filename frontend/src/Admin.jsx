@@ -42,6 +42,7 @@ export default function Admin({ initialPage = 'login' }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('enquiries');
 
   const logout = useCallback(() => {
     sessionStorage.removeItem(TOKEN_KEY);
@@ -197,7 +198,12 @@ export default function Admin({ initialPage = 'login' }) {
 
   return <AdminFrame onLogout={logout}><div className="admin-heading"><div><div className="eyebrow dark">OASIS / OPERATIONS</div><h1>Your team <span>workspace.</span></h1><p>Good service starts with a thoughtful response. Review new enquiries, follow up with customers, and keep website details current.</p></div><button className="button quiet admin-refresh" onClick={() => loadItems(token)} disabled={busy}>↻ {busy ? 'Refreshing…' : 'Refresh inbox'}</button></div>
     {error && <p className="error" role="alert">{error}</p>}{notice && <p className="success" role="status">{notice}</p>}
-    <section className="admin-card site-settings-card">
+    <nav className="admin-tabs" role="tablist" aria-label="Admin workspace sections">
+      <button type="button" role="tab" aria-selected={activeTab === 'enquiries'} className={activeTab === 'enquiries' ? 'admin-tab active' : 'admin-tab'} onClick={() => setActiveTab('enquiries')}><span>01</span> Enquiries <b>{items.length}</b></button>
+      <button type="button" role="tab" aria-selected={activeTab === 'services'} className={activeTab === 'services' ? 'admin-tab active' : 'admin-tab'} onClick={() => setActiveTab('services')}><span>02</span> Services <b>{serviceItems.filter(item => item.active).length}</b></button>
+      <button type="button" role="tab" aria-selected={activeTab === 'content'} className={activeTab === 'content' ? 'admin-tab active' : 'admin-tab'} onClick={() => setActiveTab('content')}><span>03</span> Website content</button>
+    </nav>
+    {activeTab === 'content' && <section className="admin-card site-settings-card">
       <div className="eyebrow dark">WEBSITE CONTENT</div>
       <h2>Update public details.</h2>
       <p>Changes saved here are shared by the contact page, homepage and footer. Phone numbers are clickable for visitors.</p>
@@ -218,8 +224,8 @@ export default function Admin({ initialPage = 'login' }) {
         <label>Homepage introduction<textarea name="hero_description" required minLength="10" maxLength="1000" rows="3" value={siteSettings.hero_description} onChange={changeSiteSetting}/></label>
         <button className="button primary" disabled={settingsBusy}>{settingsBusy ? 'Saving settings…' : 'Save website settings ↗'}</button>
       </form>
-    </section>
-    <section className="admin-card service-manager">
+    </section>}
+    {activeTab === 'services' && <section className="admin-card service-manager">
       <div className="eyebrow dark">PUBLIC SERVICES</div><h2>Manage your services.</h2><p>Create, edit, reorder, or remove services. Active services appear on the public website and in the enquiry form.</p>
       <form className="form admin-form service-editor" onSubmit={saveService}>
         <div className="form-row"><label>Service name *<input required minLength="2" maxLength="120" value={serviceDraft.title} onChange={e=>setServiceDraft({...serviceDraft,title:e.target.value})} placeholder="e.g. Cybersecurity review"/></label><label>Display order<input type="number" min="0" max="10000" value={serviceDraft.sort_order} onChange={e=>setServiceDraft({...serviceDraft,sort_order:e.target.value})}/></label></div>
@@ -228,7 +234,8 @@ export default function Admin({ initialPage = 'login' }) {
         <div className="service-editor-actions"><button className="button primary" disabled={serviceBusy}>{serviceBusy?'Saving…':editingServiceId?'Save service changes':'Add service ↗'}</button>{editingServiceId&&<button type="button" className="button call-secondary" onClick={()=>{setEditingServiceId(null);setServiceDraft({title:'',description:'',active:true,sort_order:0})}}>Cancel edit</button>}</div>
       </form>
       <div className="managed-services">{serviceItems.map(service=><article className={!service.active?'managed-service archived':'managed-service'} key={service.id}><div><span className="managed-service-state">{service.active?'LIVE ON WEBSITE':'HIDDEN'}</span><h3>{service.title}</h3><p>{service.description}</p><small>Display order: {service.sort_order}</small></div><div className="managed-service-actions"><button type="button" className="button call-secondary" onClick={()=>{setEditingServiceId(service.id);setServiceDraft({title:service.title,description:service.description,active:service.active,sort_order:service.sort_order})}}>Edit</button>{service.active&&<button type="button" className="admin-archive" onClick={()=>archiveService(service)}>Remove</button>}</div></article>)}</div>
-    </section>
+    </section>}
+    {activeTab === 'enquiries' && <>
     <div className="admin-summary"><b>{filteredItems.length}</b><span>matching enquiries · {items.length} loaded</span><small>Search customer details or message text, then narrow by status, service, or date.</small></div>
     <section className="admin-card enquiry-filters"><div className="eyebrow dark">FIND AN ENQUIRY</div><div className="enquiry-filter-grid">
       <label>Search<input type="search" value={searchText} onChange={e=>setSearchText(e.target.value)} placeholder="Name, email, phone, company, message…"/></label>
@@ -242,5 +249,6 @@ export default function Admin({ initialPage = 'login' }) {
       <div className="enquiry-meta"><span>{item.service}</span><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString()}</time></div>
       <p className="enquiry-message">{item.message}</p>
     </article>)}</div>}
+    </>}
   </AdminFrame>;
 }
