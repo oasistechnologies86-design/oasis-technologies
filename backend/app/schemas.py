@@ -6,11 +6,12 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 class ContactCreate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     email: EmailStr
+    phone: str = Field(min_length=7, max_length=40)
     company: str | None = Field(default=None, max_length=160)
     service: str = Field(min_length=2, max_length=120)
     message: str = Field(min_length=10, max_length=5000)
 
-    @field_validator("name", "service", "message")
+    @field_validator("name", "service", "message", "phone")
     @classmethod
     def strip_text(cls, value: str):
         value = value.strip()
@@ -56,3 +57,22 @@ class SiteSettingsUpdate(BaseModel):
         if not value:
             raise ValueError("This field cannot be empty.")
         return value
+
+
+class ServiceCreate(BaseModel):
+    title: str = Field(min_length=2, max_length=120)
+    description: str = Field(min_length=10, max_length=2000)
+    active: bool = True
+    sort_order: int = Field(default=0, ge=0, le=10000)
+
+    @field_validator("title", "description")
+    @classmethod
+    def strip_service_text(cls, value: str):
+        value = value.strip()
+        if not value:
+            raise ValueError("This field cannot be empty.")
+        return value
+
+
+class ServiceUpdate(ServiceCreate):
+    pass
