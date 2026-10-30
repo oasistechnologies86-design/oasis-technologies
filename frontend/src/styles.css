@@ -67,3 +67,47 @@ footer{background:#0b1220;color:#fff;padding:48px 0 0}
 @media(max-width:900px){.theme-toggle{margin-left:auto}}
 @media(max-width:650px){.links .theme-toggle{width:100%;justify-content:center;margin:8px 0 12px;padding:12px}.hero-photo{inset:7% 3%;width:94%;height:86%;opacity:.42}.work-visual{height:190px}}
 @media(prefers-reduced-motion:reduce){.hero-photo,.work-visual img{transition:none}}
+
+/* Sticky navigation, callable contact details, and onboarding tour */
+.header{position:sticky;top:0;z-index:50;box-shadow:0 8px 24px #050b1712}
+.header .brand{max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.call-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+.call-actions .button{margin-top:0}
+.call-secondary{background:transparent;border-color:#b8c4dc;color:#263550;box-shadow:none}
+.site-shell[data-theme="dark"] .call-secondary{color:#eaf0ff;border-color:#50617f}
+.tour-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:#071020bd;backdrop-filter:blur(7px)}
+.tour-card{position:relative;width:min(480px,100%);padding:clamp(25px,5vw,40px);border:1px solid #dce4f5;border-radius:22px;background:#fff;color:#172235;box-shadow:0 28px 90px #0005}
+.tour-close{position:absolute;right:15px;top:13px;width:38px;height:38px;border:1px solid #dce4f0;border-radius:50%;background:#f6f8fc;color:#263550;font-size:24px;cursor:pointer}
+.tour-icon{width:56px;height:56px;display:grid;place-items:center;border-radius:16px;background:#e9efff;color:#4668df;font-size:27px;margin-bottom:24px}
+.tour-kicker{font-size:10px;font-weight:800;letter-spacing:1.7px;color:#536dd0}
+.tour-card h2{font-family:Manrope,sans-serif;font-size:clamp(25px,5vw,34px);line-height:1.2;letter-spacing:-1px;margin:14px 0}
+.tour-card>p{font-size:14px;line-height:1.85;color:#4d5c73;min-height:78px}
+.tour-progress{display:flex;gap:7px;margin:24px 0}
+.tour-progress span{height:4px;flex:1;border-radius:99px;background:#e4e9f3}
+.tour-progress span.active{background:#5479f6}
+.tour-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tour-actions>div{display:flex;align-items:center;gap:8px}
+.tour-skip{border:0;background:transparent;color:#52617a;font-size:12px;font-weight:700;padding:10px 0;cursor:pointer}
+.help-button{position:fixed;right:20px;bottom:20px;z-index:40;border:1px solid #b8c8ff;border-radius:999px;padding:12px 17px;background:#1c2b4c;color:white;box-shadow:0 8px 25px #07102033;font-size:12px;font-weight:700;cursor:pointer}
+.site-settings-card{margin:0 0 30px}
+.site-settings-card h2{font-family:Manrope,sans-serif;font-size:28px;letter-spacing:-1px;margin:12px 0}
+.site-settings-card>p{font-size:13px}
+.settings-form{margin-bottom:0}
+.settings-form .form-row{align-items:start}
+.site-shell[data-theme="dark"] .tour-card{background:#111e33;border-color:#344560;color:#f2f6ff}
+.site-shell[data-theme="dark"] .tour-card>p{color:#c3cfe3}
+.site-shell[data-theme="dark"] .tour-close{background:#1b2b46;color:#fff;border-color:#435575}
+.site-shell[data-theme="dark"] .tour-skip{color:#c4d0e5}
+.site-shell[data-theme="dark"] .tour-progress span{background:#344560}
+.site-shell[data-theme="dark"] .tour-progress span.active{background:#8ba5ff}
+.site-shell[data-theme="dark"] .site-settings-card{background:#111e33;color:#edf2ff}
+@media(max-width:650px){
+  .header{height:68px}
+  .header .brand{max-width:calc(100vw - 105px);font-size:15px}
+  .links{max-height:calc(100vh - 68px);overflow-y:auto}
+  .tour-card>p{min-height:0}
+  .tour-actions{align-items:flex-start}
+  .tour-actions .button{padding:12px}
+  .help-button{right:14px;bottom:14px}
+  .settings-form .form-row{grid-template-columns:1fr;gap:0}
+}
