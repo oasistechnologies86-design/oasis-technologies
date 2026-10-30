@@ -27,10 +27,10 @@ Set these in `backend/.env` for local development or Render's Environment settin
 From the backend folder with the virtual environment activated, generate a password hash locally:
 
 ```powershell
-python -c "from pwdlib import PasswordHash; print(PasswordHash.recommended().hash('ReplaceThisWithYourOwnStrongPassword123!'))"
+python -c "from getpass import getpass; from pwdlib import PasswordHash; print(PasswordHash.recommended().hash(getpass('Enter new admin password: ')))"
 ```
 
-Paste the printed hash into Render's `ADMIN_PASSWORD_HASH`. Use the original password (not the hash) when signing in. Do not use the sample password as your real password.
+Paste the printed hash into Render's `ADMIN_PASSWORD_HASH`. Use the password you typed (not the hash) when signing in. The password is hidden while typing and is not embedded in your shell command history.
 
 Generate the JWT secret:
 
