@@ -27,3 +27,14 @@ class SiteSettings(Base):
     hero_title: Mapped[str] = mapped_column(String(120), nullable=False, default="Build what's next.")
     hero_accent: Mapped[str] = mapped_column(String(120), nullable=False, default="Make it matter.")
     hero_description: Mapped[str] = mapped_column(Text, nullable=False, default="We build useful digital products and deliver dependable IT services that help ambitious businesses move forward.")
+
+
+class Service(Base):
+    __tablename__ = "services"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    slug: Mapped[str] = mapped_column(String(140), unique=True, nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
