@@ -60,8 +60,9 @@ export default function Admin({ initialPage = 'login' }) {
   }, [logout]);
 
   useEffect(() => {
-    if (initialPage === 'enquiries' && token) loadItems(token);
-  }, [initialPage, token, loadItems]);
+    if (initialPage === 'enquiries' && !token) navigate('/team/login', { replace: true });
+    else if (initialPage === 'enquiries' && token) loadItems(token);
+  }, [initialPage, token, loadItems, navigate]);
 
   async function submitLogin(event) {
     event.preventDefault();
