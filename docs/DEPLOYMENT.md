@@ -35,3 +35,12 @@ Import the repository with root directory `frontend`, build command `npm run bui
 - Finish database migrations, backups/retention, login rate limiting/monitoring, privacy/legal content, and a production security review.
 
 Email notifications, quotations, support tickets and file uploads are not implemented yet.
+
+
+## Editable public website settings
+
+The admin workspace at `/team/enquiries` includes a Website Content editor for the company name, public email, two phone numbers, footer tagline and homepage heading/description. The public frontend reads these values from `GET /api/v1/site-settings`; only authenticated admins can read the protected settings endpoint or save updates through `PUT /api/v1/admin/site-settings`.
+
+Before production deployment, open the Supabase SQL Editor and review/run `backend/sql/20261030_site_settings.sql` once. This creates and seeds the `site_settings` table. Local development creates the table automatically through SQLAlchemy.
+
+The public header stays visible while scrolling. The contact page includes clickable phone links, email, and WhatsApp. A four-step visitor tour appears on first visit; visitors can dismiss it and reopen it with the Help button. Theme selection persists in the browser.
