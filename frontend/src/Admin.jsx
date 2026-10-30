@@ -15,7 +15,7 @@ async function adminRequest(path, token, options = {}) {
 
 function AdminFrame({ children, onLogout }) {
   return <div className="admin-shell">
-    <header className="admin-top"><Link to="/" className="brand"><span className="brand-mark">O</span> oasis <small>technologies</small></Link><button className="admin-logout" onClick={onLogout}>Sign out</button></header>
+    <header className="admin-top"><Link to="/" className="brand"><span className="brand-mark">O</span> oasis <small>technologies</small></Link><button className="admin-logout" onClick={() => onLogout && setConfirmLogout(true)}>Sign out</button>{confirmLogout && <div className="confirm-backdrop" role="dialog" aria-modal="true" aria-labelledby="logout-title"><section className="confirm-card"><div className="eyebrow dark">LEAVE WORKSPACE</div><h2 id="logout-title">Sign out of Oasis?</h2><p>You will need to sign in again to view customer enquiries and website settings.</p><div className="confirm-actions"><button type="button" className="button call-secondary" onClick={() => setConfirmLogout(false)}>Stay signed in</button><button type="button" className="button primary" onClick={() => { setConfirmLogout(false); onLogout?.(); }}>Yes, sign out</button></div></section></div></header>
     <main className="admin-main">{children}</main>
     <footer className="admin-foot">Oasis Technologies · Internal team area</footer>
   </div>;
@@ -32,6 +32,15 @@ export default function Admin({ initialPage = 'login' }) {
   const [notice, setNotice] = useState('');
   const [siteSettings, setSiteSettings] = useState({company_name:'Oasis Technologies',contact_email:'oasistechnologies86@gmail.com',phone_primary:'0246470941',phone_secondary:'0201491597',tagline:'Thoughtful technology. Real-world impact.',hero_title:'Build what is next.',hero_accent:'Make it matter.',hero_description:'We build useful digital products and deliver dependable IT services that help ambitious businesses move forward.'});
   const [settingsBusy, setSettingsBusy] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [serviceItems, setServiceItems] = useState([]);
+  const [serviceDraft, setServiceDraft] = useState({title:'',description:'',active:true,sort_order:0});
+  const [editingServiceId, setEditingServiceId] = useState(null);
+  const [serviceBusy, setServiceBusy] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [serviceFilter, setServiceFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
 
   const logout = useCallback(() => {
     sessionStorage.removeItem(TOKEN_KEY);
@@ -48,7 +57,7 @@ export default function Admin({ initialPage = 'login' }) {
     try {
       const result = await adminRequest('/admin/enquiries', currentToken);
       setItems(result.items || []);
-      const savedSettings = await adminRequest('/admin/site-settings', currentToken);
+      const servicesResult = await adminRequest('/admin/services', currentToken);\n      setServiceItems(servicesResult.items || []);\n      const savedSettings = await adminRequest('/admin/site-settings', currentToken);
       setSiteSettings(current => ({...current, ...savedSettings}));
     } catch (err) {
       if (/session is invalid|expired|sign in/i.test(err.message)) {
@@ -118,6 +127,43 @@ export default function Admin({ initialPage = 'login' }) {
     }
   }
 
+  async function saveService(event) {
+    event.preventDefault();
+    if (!token) return;
+    setServiceBusy(true); setError(''); setNotice('');
+    try {
+      const payload = {...serviceDraft, sort_order:Number(serviceDraft.sort_order)||0};
+      if (editingServiceId) await adminRequest('/admin/services/' + editingServiceId, token, {method:'PUT',body:JSON.stringify(payload)});
+      else await adminRequest('/admin/services', token, {method:'POST',body:JSON.stringify(payload)});
+      const refreshed = await adminRequest('/admin/services', token);
+      setServiceItems(refreshed.items || []);
+      setServiceDraft({title:'',description:'',active:true,sort_order:0});
+      const wasEditing = Boolean(editingServiceId);
+      setEditingServiceId(null);
+      setNotice(wasEditing ? 'Service updated.' : 'Service created and saved.');
+    } catch (err) { setError(err.message); }
+    finally { setServiceBusy(false); }
+  }
+
+  async function archiveService(service) {
+    if (!window.confirm('Remove "' + service.title + '" from the public services page? Past enquiries will be kept.')) return;
+    try {
+      await adminRequest('/admin/services/' + service.id, token, {method:'DELETE'});
+      setServiceItems(current => current.map(item => item.id === service.id ? {...item,active:false} : item));
+      setNotice('Service removed from the public website. Past enquiries are preserved.');
+    } catch (err) { setError(err.message); }
+  }
+
+  const filteredItems = items.filter(item => {
+    const q = searchText.trim().toLowerCase();
+    const matchesSearch = !q || [item.name,item.email,item.phone,item.company,item.service,item.message].some(value => String(value||'').toLowerCase().includes(q));
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesService = serviceFilter === 'all' || item.service === serviceFilter;
+    const age = Date.now() - new Date(item.created_at).getTime();
+    const matchesDate = dateFilter === 'all' || (dateFilter === 'today' && new Date(item.created_at).toDateString() === new Date().toDateString()) || (dateFilter === '7days' && age < 7*86400000) || (dateFilter === '30days' && age < 30*86400000);
+    return matchesSearch && matchesStatus && matchesService && matchesDate;
+  });
+
   if (initialPage === 'login' && token) {
     return <AdminFrame onLogout={logout}><section className="admin-card"><p>You're already signed in.</p><button className="button primary" onClick={() => navigate('/team/enquiries')}>Open enquiries →</button></section></AdminFrame>;
   }
@@ -170,9 +216,26 @@ export default function Admin({ initialPage = 'login' }) {
         <button className="button primary" disabled={settingsBusy}>{settingsBusy ? 'Saving settings…' : 'Save website settings ↗'}</button>
       </form>
     </section>
-    <div className="admin-summary"><b>{items.length}</b><span>enquiries in your latest inbox view</span><small>Review each message and update its status so your team knows what needs attention.</small></div>
-    {busy && items.length === 0 ? <p>Loading enquiries…</p> : items.length === 0 ? <section className="admin-card"><h2>No enquiries yet</h2><p>New contact form submissions will appear here.</p></section> : <div className="enquiry-list">{items.map(item => <article className="enquiry-card" key={item.id}>
-      <div className="enquiry-head"><div><h2>{item.name}</h2><a href={`mailto:${item.email}`}>{item.email}</a>{item.company && <p>{item.company}</p>}</div><label className="status-label">Status<select value={item.status} onChange={e => updateStatus(item.id, e.target.value)}><option value="new">New</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select></label></div>
+    <section className="admin-card service-manager">
+      <div className="eyebrow dark">PUBLIC SERVICES</div><h2>Manage your services.</h2><p>Create, edit, reorder, or remove services. Active services appear on the public website and in the enquiry form.</p>
+      <form className="form admin-form service-editor" onSubmit={saveService}>
+        <div className="form-row"><label>Service name *<input required minLength="2" maxLength="120" value={serviceDraft.title} onChange={e=>setServiceDraft({...serviceDraft,title:e.target.value})} placeholder="e.g. Cybersecurity review"/></label><label>Display order<input type="number" min="0" max="10000" value={serviceDraft.sort_order} onChange={e=>setServiceDraft({...serviceDraft,sort_order:e.target.value})}/></label></div>
+        <label>Description *<textarea required minLength="10" maxLength="2000" rows="3" value={serviceDraft.description} onChange={e=>setServiceDraft({...serviceDraft,description:e.target.value})} placeholder="Explain the service clearly to customers"/></label>
+        <label className="service-active-toggle"><input type="checkbox" checked={serviceDraft.active} onChange={e=>setServiceDraft({...serviceDraft,active:e.target.checked})}/> Show this service on the public website</label>
+        <div className="service-editor-actions"><button className="button primary" disabled={serviceBusy}>{serviceBusy?'Saving…':editingServiceId?'Save service changes':'Add service ↗'}</button>{editingServiceId&&<button type="button" className="button call-secondary" onClick={()=>{setEditingServiceId(null);setServiceDraft({title:'',description:'',active:true,sort_order:0})}}>Cancel edit</button>}</div>
+      </form>
+      <div className="managed-services">{serviceItems.map(service=><article className={!service.active?'managed-service archived':'managed-service'} key={service.id}><div><span className="managed-service-state">{service.active?'LIVE ON WEBSITE':'HIDDEN'}</span><h3>{service.title}</h3><p>{service.description}</p><small>Display order: {service.sort_order}</small></div><div className="managed-service-actions"><button type="button" className="button call-secondary" onClick={()=>{setEditingServiceId(service.id);setServiceDraft({title:service.title,description:service.description,active:service.active,sort_order:service.sort_order})}}>Edit</button>{service.active&&<button type="button" className="admin-archive" onClick={()=>archiveService(service)}>Remove</button>}</div></article>)}</div>
+    </section>
+    <div className="admin-summary"><b>{filteredItems.length}</b><span>matching enquiries · {items.length} loaded</span><small>Search customer details or message text, then narrow by status, service, or date.</small></div>
+    <section className="admin-card enquiry-filters"><div className="eyebrow dark">FIND AN ENQUIRY</div><div className="enquiry-filter-grid">
+      <label>Search<input type="search" value={searchText} onChange={e=>setSearchText(e.target.value)} placeholder="Name, email, phone, company, message…"/></label>
+      <label>Status<select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All statuses</option><option value="new">New</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select></label>
+      <label>Service<select value={serviceFilter} onChange={e=>setServiceFilter(e.target.value)}><option value="all">All services</option>{Array.from(new Set(items.map(item=>item.service))).map(service=><option key={service} value={service}>{service}</option>)}</select></label>
+      <label>Date received<select value={dateFilter} onChange={e=>setDateFilter(e.target.value)}><option value="all">Any time</option><option value="today">Today</option><option value="7days">Last 7 days</option><option value="30days">Last 30 days</option></select></label>
+      <button type="button" className="button call-secondary clear-filters" onClick={()=>{setSearchText('');setStatusFilter('all');setServiceFilter('all');setDateFilter('all')}}>Clear filters</button>
+    </div></section>
+    {busy && items.length === 0 ? <p>Loading enquiries…</p> : items.length === 0 ? <section className="admin-card"><h2>No enquiries yet</h2><p>New contact form submissions will appear here.</p></section> : filteredItems.length === 0 ? <section className="admin-card"><h2>No matching enquiries</h2><p>Try changing the search or clearing the filters.</p></section> : <div className="enquiry-list">{filteredItems.map(item => <article className="enquiry-card" key={item.id}>
+      <div className="enquiry-head"><div><h2>{item.name}</h2><a href={"mailto:"+item.email}>{item.email}</a><a href={"tel:"+(item.phone||"")} className="enquiry-phone">{item.phone||"No phone supplied on older enquiry"}</a>{item.company && <p>{item.company}</p>}</div><label className="status-label">Status<select value={item.status} onChange={e => updateStatus(item.id, e.target.value)}><option value="new">New</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select></label></div>
       <div className="enquiry-meta"><span>{item.service}</span><time dateTime={item.created_at}>{new Date(item.created_at).toLocaleString()}</time></div>
       <p className="enquiry-message">{item.message}</p>
     </article>)}</div>}
