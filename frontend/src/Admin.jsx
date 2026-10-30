@@ -14,8 +14,9 @@ async function adminRequest(path, token, options = {}) {
 }
 
 function AdminFrame({ children, onLogout }) {
+  const [confirmLogout, setConfirmLogout] = useState(false);
   return <div className="admin-shell">
-    <header className="admin-top"><Link to="/" className="brand"><span className="brand-mark">O</span> oasis <small>technologies</small></Link><button className="admin-logout" onClick={() => onLogout && setConfirmLogout(true)}>Sign out</button>{confirmLogout && <div className="confirm-backdrop" role="dialog" aria-modal="true" aria-labelledby="logout-title"><section className="confirm-card"><div className="eyebrow dark">LEAVE WORKSPACE</div><h2 id="logout-title">Sign out of Oasis?</h2><p>You will need to sign in again to view customer enquiries and website settings.</p><div className="confirm-actions"><button type="button" className="button call-secondary" onClick={() => setConfirmLogout(false)}>Stay signed in</button><button type="button" className="button primary" onClick={() => { setConfirmLogout(false); onLogout?.(); }}>Yes, sign out</button></div></section></div></header>
+    <header className="admin-top"><Link to="/" className="brand"><span className="brand-mark">O</span> oasis <small>technologies</small></Link>{onLogout && <button className="admin-logout" onClick={() => setConfirmLogout(true)}>Sign out</button>}{confirmLogout && <div className="confirm-backdrop" role="dialog" aria-modal="true" aria-labelledby="logout-title"><section className="confirm-card"><div className="eyebrow dark">LEAVE WORKSPACE</div><h2 id="logout-title">Sign out of Oasis?</h2><p>You will need to sign in again to view customer enquiries and website settings.</p><div className="confirm-actions"><button type="button" className="button call-secondary" onClick={() => setConfirmLogout(false)}>Stay signed in</button><button type="button" className="button primary" onClick={() => { setConfirmLogout(false); onLogout?.(); }}>Yes, sign out</button></div></section></div></header>
     <main className="admin-main">{children}</main>
     <footer className="admin-foot">Oasis Technologies · Internal team area</footer>
   </div>;
@@ -169,7 +170,7 @@ export default function Admin({ initialPage = 'login' }) {
   }
 
   if (initialPage === 'login') {
-    return <AdminFrame onLogout={() => {}}><div className="admin-login-layout">
+    return <AdminFrame onLogout={null}><div className="admin-login-layout">
       <aside className="admin-login-aside">
         <div className="admin-login-monogram">O<span>.</span></div>
         <div className="eyebrow">OASIS TECHNOLOGIES / TEAM</div>
