@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Keep private team/admin routes out of routine crawling
+Disallow: /team/
+Disallow: /admin/
+
+Sitemap: https://oasis-technologies-pearl.vercel.app/sitemap.xml
