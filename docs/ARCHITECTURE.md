@@ -8,4 +8,4 @@
 - frontend/vercel.json: SPA route fallback.
 - .github/workflows/ci.yml: build and test checks.
 
-Public contact submissions are validated and persisted. Administrative data access remains disabled until authentication and authorization are implemented. Do not present this starter as a finished ticketing system or CMS.
+Public contact submissions are validated and persisted. The admin workspace is protected by bearer-token authentication: it lists and updates customer enquiries, manages the public service catalog, and edits the shared website settings. It is not yet a full ticketing system or CMS.

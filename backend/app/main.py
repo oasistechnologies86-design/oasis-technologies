@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from .config import get_settings
-from .database import Base, engine, get_db
+from .database import Base, SessionLocal, engine, get_db
 from .models import ContactEnquiry, Service, SiteSettings
 from .schemas import AdminLogin, AdminToken, ContactCreate, ContactCreated, EnquiryStatusUpdate, ServiceCreate, ServiceUpdate, SiteSettingsUpdate
 from .security import create_access_token, password_hash, require_admin
@@ -35,20 +35,60 @@ async def lifespan(app: FastAPI):
     # rename, alter, or delete existing tables/columns. Use a versioned migration
     # for future changes to an existing table's structure.
     Base.metadata.create_all(bind=engine)
-    # Safe additive migration for existing databases: preserve all prior enquiries.
-    inspector = inspect(engine)
-    if inspector.has_table("contact_enquiries") and "phone" not in {column["name"] for column in inspector.get_columns("contact_enquiries")}:
-        with engine.begin() as connection:
-            connection.execute(text("ALTER TABLE contact_enquiries ADD COLUMN phone VARCHAR(40)"))
-    with engine.begin() as connection:
-        existing_services = connection.execute(text("SELECT COUNT(*) FROM services")).scalar_one()
-        if existing_services == 0:
-            for index, service in enumerate(SERVICES):
-                connection.execute(
-                    text("INSERT INTO services (slug, title, description, active, sort_order) VALUES (:slug, :title, :description, :active, :sort_order)"),
-                    {**service, "active": True, "sort_order": index},
-                )
+    _apply_additive_migrations(engine)
+    _seed_services(engine)
     yield
+
+
+def _apply_additive_migrations(target_engine=engine):
+    """Add columns introduced by later releases to databases that predate them.
+
+    ``create_all`` never alters an existing table, so a production database
+    created by an earlier release keeps its old columns and every query that
+    selects the new ones fails. Each step here is additive and idempotent, so it
+    is safe to run on every startup and preserves existing rows.
+    """
+    inspector = inspect(target_engine)
+    table_columns = {}
+    for table in ("contact_enquiries", "services"):
+        if inspector.has_table(table):
+            table_columns[table] = {column["name"] for column in inspector.get_columns(table)}
+
+    statements = []
+    if "contact_enquiries" in table_columns and "phone" not in table_columns["contact_enquiries"]:
+        statements.append("ALTER TABLE contact_enquiries ADD COLUMN phone VARCHAR(40)")
+    if "services" in table_columns:
+        service_columns = table_columns["services"]
+        if "active" not in service_columns:
+            statements.append("ALTER TABLE services ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE")
+        if "sort_order" not in service_columns:
+            statements.append("ALTER TABLE services ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0")
+        if "created_at" not in service_columns:
+            statements.append("ALTER TABLE services ADD COLUMN created_at TIMESTAMP WITH TIME ZONE")
+            statements.append("UPDATE services SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
+
+    if not statements:
+        return
+    try:
+        with target_engine.begin() as connection:
+            for statement in statements:
+                connection.execute(text(statement))
+    except SQLAlchemyError:
+        logger.exception("Additive database migration failed")
+
+
+def _seed_services(target_engine=engine):
+    """Seed the default service catalog when the table is empty."""
+    with target_engine.begin() as connection:
+        existing_services = connection.execute(text("SELECT COUNT(*) FROM services")).scalar_one()
+    if existing_services:
+        return
+    # Use the ORM so column defaults (e.g. created_at) are applied. A raw INSERT
+    # bypasses those defaults and violates the NOT NULL constraint.
+    with SessionLocal() as session:
+        for index, service in enumerate(SERVICES):
+            session.add(Service(**service, active=True, sort_order=index))
+        session.commit()
 
 
 app = FastAPI(title="Oasis Technologies API", version="0.2.0", lifespan=lifespan)

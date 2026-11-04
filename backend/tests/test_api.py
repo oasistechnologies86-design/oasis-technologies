@@ -6,9 +6,10 @@ os.environ["CORS_ORIGINS"] = "http://localhost:5173"
 
 from fastapi.testclient import TestClient
 from pwdlib import PasswordHash
+from sqlalchemy import create_engine, inspect, text
 
 from app.config import get_settings
-from app.main import app
+from app.main import app, _apply_additive_migrations, _seed_services
 from app.database import Base, engine
 
 Base.metadata.drop_all(bind=engine)
@@ -117,3 +118,47 @@ def test_site_settings_admin_authentication_and_update():
     response = client.put("/api/v1/admin/site-settings", json=payload, headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200
     assert client.get("/api/v1/site-settings").json()["contact_email"] == payload["contact_email"]
+
+
+def test_lifespan_startup_seeds_services_and_serves_them():
+    """A fresh database must start cleanly and expose the seeded catalog.
+
+    TestClient is used as a context manager so the FastAPI lifespan runs. The
+    earlier startup bug (a raw INSERT omitting the NOT NULL created_at column)
+    only appeared when the lifespan executed, which the other tests never did.
+    """
+    with TestClient(app) as startup_client:
+        response = startup_client.get("/api/v1/services")
+        assert response.status_code == 200
+        assert len(response.json()["items"]) >= 1
+
+
+def test_additive_migration_upgrades_pre_services_release_schema(tmp_path):
+    """A database from a release that predates the service columns is upgraded.
+
+    create_all cannot add columns to an existing table, so without the additive
+    migration every query touching the services table returned HTTP 500.
+    """
+    db_path = tmp_path / "legacy.db"
+    legacy_engine = create_engine(f"sqlite:///{db_path}")
+    with legacy_engine.begin() as connection:
+        connection.execute(text(
+            "CREATE TABLE services (id INTEGER PRIMARY KEY, slug VARCHAR(140) UNIQUE NOT NULL, "
+            "title VARCHAR(120) NOT NULL, description TEXT NOT NULL)"
+        ))
+        connection.execute(text(
+            "INSERT INTO services (slug, title, description) "
+            "VALUES ('software-development', 'Software development', 'Legacy row')"
+        ))
+
+    _apply_additive_migrations(legacy_engine)
+    _seed_services(legacy_engine)
+
+    columns = {column["name"] for column in inspect(legacy_engine).get_columns("services")}
+    assert {"active", "sort_order", "created_at"} <= columns
+    with legacy_engine.begin() as connection:
+        rows = connection.execute(text("SELECT title, description, active, sort_order, created_at FROM services")).all()
+    assert len(rows) == 1
+    assert rows[0][0] == "Software development"
+    assert rows[0][1] == "Legacy row"
+    assert rows[0][2] in (True, 1)
