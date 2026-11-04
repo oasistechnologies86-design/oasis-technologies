@@ -8,4 +8,4 @@ Run locally:
 API docs: http://localhost:8000/docs
 Tests: pytest -q
 
-Set APP_ENV=production and DATABASE_URL to Supabase PostgreSQL on Render. The app intentionally creates tables automatically only in development/test. Add reviewed Alembic migrations before production. Admin data endpoints remain disabled until authentication and role-based authorization exist.
+Set APP_ENV=production and DATABASE_URL to Supabase PostgreSQL on Render. Tables are created automatically when the service starts, and a small additive migration adds columns introduced by later releases to an existing database. A future change to an existing table's structure should still be accompanied by a reviewed, versioned migration (for example, Alembic). Admin data endpoints require a signed bearer token and are enabled once ADMIN_EMAIL, ADMIN_PASSWORD_HASH, and JWT_SECRET are configured.

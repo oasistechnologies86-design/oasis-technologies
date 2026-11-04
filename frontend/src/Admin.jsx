@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { apiRequest, API_BASE } from './api.js';
 
 const TOKEN_KEY = 'oasis_admin_token';
+const SESSION_ERROR = /session is invalid|expired|sign in/i;
 async function adminRequest(path, token, options = {}) {
   const response = await fetch(API_BASE + (path.startsWith('/') ? path : `/${path}`), {
     ...options,
@@ -53,6 +54,17 @@ export default function Admin({ initialPage = 'login' }) {
     navigate('/team/login', { replace: true });
   }, [navigate]);
 
+  // Any admin request can discover an expired or revoked session. Treat those
+  // the same everywhere so the user is returned to sign-in instead of seeing a
+  // raw error and silently failing to save.
+  const handleError = useCallback((err) => {
+    if (SESSION_ERROR.test(err.message)) {
+      logout();
+      return;
+    }
+    setError(err.message);
+  }, [logout]);
+
   const loadItems = useCallback(async (currentToken) => {
     setBusy(true);
     setError('');
@@ -64,15 +76,11 @@ export default function Admin({ initialPage = 'login' }) {
       const savedSettings = await adminRequest('/admin/site-settings', currentToken);
       setSiteSettings(current => ({...current, ...savedSettings}));
     } catch (err) {
-      if (/session is invalid|expired|sign in/i.test(err.message)) {
-        logout();
-        return;
-      }
-      setError(err.message);
+      handleError(err);
     } finally {
       setBusy(false);
     }
-  }, [logout]);
+  }, [handleError]);
 
   useEffect(() => {
     if (initialPage === 'enquiries' && !token) navigate('/team/login', { replace: true });
@@ -108,7 +116,7 @@ export default function Admin({ initialPage = 'login' }) {
       setSiteSettings(current => ({...current, ...saved}));
       setNotice('Website settings saved. Public pages now use the updated details.');
     } catch (err) {
-      setError(err.message);
+      handleError(err);
     } finally {
       setSettingsBusy(false);
     }
@@ -127,7 +135,7 @@ export default function Admin({ initialPage = 'login' }) {
       setItems(current => current.map(item => item.id === id ? { ...item, status } : item));
       setNotice('Enquiry status updated.');
     } catch (err) {
-      setError(err.message);
+      handleError(err);
     }
   }
 
@@ -145,7 +153,7 @@ export default function Admin({ initialPage = 'login' }) {
       const wasEditing = Boolean(editingServiceId);
       setEditingServiceId(null);
       setNotice(wasEditing ? 'Service updated.' : 'Service created and saved.');
-    } catch (err) { setError(err.message); }
+    } catch (err) { handleError(err); }
     finally { setServiceBusy(false); }
   }
 
@@ -155,7 +163,7 @@ export default function Admin({ initialPage = 'login' }) {
       await adminRequest('/admin/services/' + service.id, token, {method:'DELETE'});
       setServiceItems(current => current.map(item => item.id === service.id ? {...item,active:false} : item));
       setNotice('Service removed from the public website. Past enquiries are preserved.');
-    } catch (err) { setError(err.message); }
+    } catch (err) { handleError(err); }
   }
 
   const filteredItems = items.filter(item => {
